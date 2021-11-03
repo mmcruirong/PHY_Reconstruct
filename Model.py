@@ -98,10 +98,10 @@ def v_block(self, net, N, d):
 def discriminator():
     with tf.variable_scope("discriminator", reuse=reuse) as vs:
         y = tf.concat([y, x], 1)
-        net = tf.keras.layers.Dense(y, 80, activation_fn='leaky_relu', scope='d_fc1')
-        net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu', scope='d_fc2')
-        net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu', scope='d_fc3')
-        net = tf.keras.layers.Dense(net, 20, activation_fn='leaky_relu', scope='d_fc4')
+        net = tf.keras.layers.Dense(y, 80, activation_fn='leaky_relu')
+        net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu')
+        net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu')
+        net = tf.keras.layers.Dense(net, 20, activation_fn='leaky_relu')
         out = tf.keras.layers.Dense(net, 1, name='d_fc5')
     variables = tf.contrib.framework.get_variables(vs)
     return out, variables   
@@ -117,7 +117,7 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         csi_features = self.csi_branch(CSI, training=training)
         pilot_features = self.pilot_branch(Pilot, training=training)
         freq_features = self.freq_branch(Freq, training=training)
-        phy_payload_discriminator = self.discriminator(PHY_Payload, training=training)   
+        phy_payload_discriminator = self.generator(PHY_Payload, training=training)   
         out = self_correction * estimation_correction * PHY_Payload
         return out
 
