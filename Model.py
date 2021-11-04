@@ -96,12 +96,12 @@ def v_block(self, net, N, d):
     return net
 
 def discriminator():   
-    y = tf.concat([y, x], 1)
-    net = tf.keras.layers.Dense(y, 80, activation_fn='leaky_relu')
-    net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu')
-    net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu')
-    net = tf.keras.layers.Dense(net, 20, activation_fn='leaky_relu')
-    out = tf.keras.layers.Dense(net, 1)    
+    inp = tf.keras.Input(shape=(40,2, 48, 1))
+    out = tf.keras.layers.Dense(inp, 80, activation_fn='leaky_relu')
+    out = tf.keras.layers.Dense(out, 80, activation_fn='leaky_relu')
+    out = tf.keras.layers.Dense(out, 80, activation_fn='leaky_relu')
+    out = tf.keras.layers.Dense(out, 20, activation_fn='leaky_relu')
+    out = tf.keras.layers.Dense(out, 1)    
     return out  
 
 class PHY_Reconstruction_Generator(tf.keras.Model):
@@ -112,19 +112,19 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         self.generator = generator()
         self.PHY_payload_branch = discriminator()
     def call(self, CSI, Pilot, Freq, PHY_Payload, training=False):
-        csi_features = self.csi_branch(CSI, training=training)
-        pilot_features = self.pilot_branch(Pilot, training=training)
-        freq_features = self.freq_branch(Freq, training=training)
-        phy_payload_discriminator = self.generator(PHY_Payload, training=training)   
-        out = self_correction * estimation_correction * PHY_Payload
-        return out
+        #csi_features = self.csi_branch(CSI, training=training)
+        #pilot_features = self.pilot_branch(Pilot, training=training)
+        #freq_features = self.freq_branch(Freq, training=training)
+        phy_payload_generator = self.generator(PHY_Payload, training=training)   
+        #out = self_correction * estimation_correction * PHY_Payload
+        return phy_payload_generator
 
 class PHY_Reconstruction_discriminator(tf.keras.Model):
     def __init__(self):
         self.PHY_payload_branch = discriminator()
     def call(self, CSI, Pilot, Freq, PHY_Payload, training=False):
         phy_payload_discriminator = self.discriminator(PHY_Payload, training=training)     
-        return out
+        return phy_payload_discriminator
 
 
 """ # Legacy network stucture
