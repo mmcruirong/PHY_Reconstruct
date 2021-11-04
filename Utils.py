@@ -13,32 +13,48 @@ def data_loader_for_each_payload(data_path):
 
 def data_preprocessing_for_each_payload(data, label):
     csi_out = []
-    pilot_out = []
-    freq_out = []
+    pilot_out = []   
     phy_payload = []
-    label_out = []
-
+    #gt_out = []
+    groundtruth =[]    
     CSI = data[0] # (5000, 1)
-    Pilots = data[1]
-    freq = data[2] # 
-    Phypayload = data[3] # double
-    # print(Phypayload[2][0].shape)
+    Pilots = data[1] 
+    Phypayload = data[5] # double
+    Groundtruth = data[4]
+    #temp = Phypayload[1][0].reshape(40,48,1)
+    #temp1 = temp.reshape(40,48,1)
+    #print(Phypayload[1][0][0].reshape(40,48,1).shape)
+    #print(temp[0])
     num_samples = CSI.shape[0]
+    # mapping = np.array([1, 3,-3,-1])
+    #mapping = np.array([-3, 3, -1, 1])
+    #temp2= Groundtruth[1][0].reshape(40, 48, 1)
+    #print(temp2[0])
     for i_sample in range(num_samples):
-        csi_out.append(np.abs(CSI[i_sample][0].reshape(64, 1)))
-        pilot_out.append(np.abs(Pilots[i_sample][0].reshape(40, 4, 1)))
-        freq_out.append(freq[i_sample][0].reshape(1))
-        phy_payload.append(Phypayload[i_sample][0].reshape(40, 48, 1))
-        label_out.append(np.array(label).reshape(1))
-
+        #csi_out.append(np.concatenate((np.real(CSI[i_sample][0]).reshape(64, 1), np.imag(CSI[i_sample][0]).reshape(64, 1)), axis=-1))
+        #pilot_out.append(np.concatenate((np.real(Pilots[i_sample][0]).reshape(40,4,1), np.imag(Pilots[i_sample][0]).reshape(40,4, 1)), axis=-1))
+        csi_angle = np.angle(CSI[i_sample][0].reshape(48, 1))
+        csi_amp = np.abs(CSI[i_sample][0].reshape(48, 1))        
+        csi_out.append([csi_amp,csi_angle])
+        pilot_angle = np.angle(Pilots[i_sample][0].reshape(40, 4))  
+        pilot_amp = np.abs(Pilots[i_sample][0].reshape(40, 4))        
+        pilot_out.append([pilot_amp,pilot_angle])    
+        phy_payload_angle = np.angle(Phypayload[i_sample][0].reshape(40,48))
+        phy_payload_amp = np.abs(Phypayload[i_sample][0].reshape(40,48))
+        phy_payload.append([phy_payload_amp,phy_payload_angle])
+        #groundtruth.append(np.transpose(mapping[np.intc(Groundtruth[i_sample][0])]).reshape(40, 48, 1))
+        groundtruth_angle = np.angle(Groundtruth[i_sample][0].reshape(40,48))
+        groundtruth_amp = np.angle(Groundtruth[i_sample][0].reshape(40,48))
+        groundtruth.append([groundtruth_amp,groundtruth_angle]) 
     csi_out = np.array(csi_out)
     pilot_out = np.array(pilot_out)
-    freq_out = np.array(freq_out)
     phy_payload = np.array(phy_payload)
-    label_out = np.array(label_out)
+    groundtruth = np.array(groundtruth)
+    print('CSI_SHAPE=',csi_out.shape)
+    print('pilot_SHAPE=',pilot_out.shape)
+    print('phy_SHAPE=',phy_payload.shape)
+    print('ground_SHAPE=',groundtruth.shape)
 
-    return csi_out, pilot_out, freq_out, phy_payload, label_out
-    
 def get_processed_dataset(path, split=4/5):
     file_list = os.listdir(path)
     
@@ -96,7 +112,7 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
 
     return train_data, test_data
 
-def NN_training(model, data_path, logdir):
+def NN_training(generator, discriminator, data_path, logdir):
     EPOCHS = 200
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
@@ -109,12 +125,12 @@ def NN_training(model, data_path, logdir):
     loss_fn = tf.keras.losses.MeanSquaredError()   
     accuracy = tf.metrics.SparseCategoricalAccuracy()
     cls_loss = tf.metrics.Mean()
-    def generator_loss = (real_input, fake_input):
-        return loss_fn(tf.ones_like(fake_output), fake_output)
+    def generator_loss(real_output, fake_output):
+        return loss_fn(fake_output, fake_output)
         
-    def discriminator_loss = (real_input, fake_input):
-        real_loss = loss_fn(tf.ones_like(real_output), real_output)
-        fake_loss = loss_fn(tf.zeros_like(fake_output), fake_output)
+    def discriminator_loss(real_output, fake_output):
+        real_loss = loss_fn(real_output, real_output)
+        fake_loss = loss_fn(fake_output, fake_output)
         total_loss = real_loss + fake_loss
         return total_loss
         
@@ -122,31 +138,31 @@ def NN_training(model, data_path, logdir):
     print("The dataset has been loaded!")
 
     @tf.function
-    def step(csi, pilot, freq, phy_payload, ground_truth, training):
+    def step(csi, pilot, phy_payload, groundtruth, training):
 
         with tf.GradientTape() as tape:
-            generated_out = generator(csi, pilot, freq, phy_payload, training)
-            real_out = discriminator(ground_truth, outs)
-            fake_out = discriminator(phy_payload, outs)
-            gen_loss = generator_loss(fake_output)
-            disc_loss = discriminator_loss(real_output, fake_output)
+            generated_out = generator(phy_payload, training)
+            real_out = discriminator(groundtruth)
+            fake_out = discriminator(generated_out)
+            gen_loss = generator_loss(fake_out)
+            disc_loss = discriminator_loss(real_out, fake_out)
         if training:
-            gen_gradients = tape.gradient(gen_loss, model.trainable_weights)
-            disc_gradients = tape.gradient(disc_loss_loss, model.trainable_weights)
+            gen_gradients = tape.gradient(gen_loss, generator.trainable_weights)
+            disc_gradients = tape.gradient(disc_loss, discriminator.trainable_weights)
 
-            generator_optimizer.apply_gradients(zip(gen_gradients, model.trainable_weights))
-            discriminator_optimizer.apply_gradients(zip(disc_gradients, model.trainable_weights))
+            generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_weights))
+            discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             
-        accuracy(label, outs)
-        cls_loss(loss)
+        accuracy(gen_loss)
+        cls_loss(disc_loss)
     
     training_step = 0
     best_validation_acc = 0
     print("start training...")
     for epoch in range(EPOCHS):
-        for csi, pilot, freq, phy_payload, label in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
+        for csi, pilot, phy_payload, groundtruth in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
             training_step += 1
-            step(csi, pilot, freq, phy_payload, ground_truth, training=True)
+            step(csi, pilot, phy_payload, groundtruth, training=True)
 
             if training_step % 200 == 0:
                 with writer.as_default():
@@ -172,5 +188,5 @@ def NN_training(model, data_path, logdir):
                 cls_loss.reset_states()
                 accuracy.reset_states()
 
-
-# get_processed_dataset("dataset")
+if __name__ == "__main__":
+    get_processed_dataset("dataset")
