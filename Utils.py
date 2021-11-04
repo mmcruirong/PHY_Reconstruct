@@ -102,25 +102,41 @@ def NN_training(model, data_path, logdir):
     print(f"RUNID: {runid}")
     
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
-    optimizer = tf.optimizers.Adam(1e-4)
+    generator_optimizer = tf.optimizers.Adam(1e-4)
+    discriminator_optimizer = tf.optimizers.Adam(1e-4)
+
     #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    loss_fn = tf.keras.losses.MeanSquaredError()
+    loss_fn = tf.keras.losses.MeanSquaredError()   
     accuracy = tf.metrics.SparseCategoricalAccuracy()
     cls_loss = tf.metrics.Mean()
-
+    def generator_loss = (real_input, fake_input):
+        return loss_fn(tf.ones_like(fake_output), fake_output)
+        
+    def discriminator_loss = (real_input, fake_input):
+        real_loss = loss_fn(tf.ones_like(real_output), real_output)
+        fake_loss = loss_fn(tf.zeros_like(fake_output), fake_output)
+        total_loss = real_loss + fake_loss
+        return total_loss
+        
     train_data, test_data = load_processed_dataset(data_path, 500, 64, 256)
     print("The dataset has been loaded!")
 
     @tf.function
-    def step(csi, pilot, freq, phy_payload, label, training):
+    def step(csi, pilot, freq, phy_payload, ground_truth, training):
 
         with tf.GradientTape() as tape:
-            outs = model(csi, pilot, freq, phy_payload, training)
-            loss = loss_fn(label, outs)
+            generated_out = generator(csi, pilot, freq, phy_payload, training)
+            real_out = discriminator(ground_truth, outs)
+            fake_out = discriminator(phy_payload, outs)
+            gen_loss = generator_loss(fake_output)
+            disc_loss = discriminator_loss(real_output, fake_output)
         if training:
-            gradients = tape.gradient(loss, model.trainable_weights)
-            optimizer.apply_gradients(zip(gradients, model.trainable_weights))
+            gen_gradients = tape.gradient(gen_loss, model.trainable_weights)
+            disc_gradients = tape.gradient(disc_loss_loss, model.trainable_weights)
 
+            generator_optimizer.apply_gradients(zip(gen_gradients, model.trainable_weights))
+            discriminator_optimizer.apply_gradients(zip(disc_gradients, model.trainable_weights))
+            
         accuracy(label, outs)
         cls_loss(loss)
     
@@ -130,7 +146,7 @@ def NN_training(model, data_path, logdir):
     for epoch in range(EPOCHS):
         for csi, pilot, freq, phy_payload, label in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
             training_step += 1
-            step(csi, pilot, freq, phy_payload, label, training=True)
+            step(csi, pilot, freq, phy_payload, ground_truth, training=True)
 
             if training_step % 200 == 0:
                 with writer.as_default():
