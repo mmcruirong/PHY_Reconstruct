@@ -69,7 +69,7 @@ def generator():
     out = tf.keras.layers.Dense(out, 20, activation='leaky_relu')
     out = tf.keras.layers.Dense(out, 20, activation='leaky_relu')
     out = tf.keras.layers.Dense(out, 32)
-    out = orginal_block(out, 256, 4)  # accurate
+    out = v_block(out, 256, 4)  # accurate
     out = tf.keras.layers.Dense(out, 80, activation_fn='leaky_relu')
     out = tf.keras.layers.Dense(out, 2)
     out += inp
@@ -95,16 +95,14 @@ def v_block(self, net, N, d):
     net += shortcut
     return net
 
-def discriminator():
-    with tf.variable_scope("discriminator", reuse=reuse) as vs:
-        y = tf.concat([y, x], 1)
-        net = tf.keras.layers.Dense(y, 80, activation_fn='leaky_relu')
-        net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu')
-        net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu')
-        net = tf.keras.layers.Dense(net, 20, activation_fn='leaky_relu')
-        out = tf.keras.layers.Dense(net, 1, name='d_fc5')
-    variables = tf.contrib.framework.get_variables(vs)
-    return out, variables   
+def discriminator():   
+    y = tf.concat([y, x], 1)
+    net = tf.keras.layers.Dense(y, 80, activation_fn='leaky_relu')
+    net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu')
+    net = tf.keras.layers.Dense(net, 80, activation_fn='leaky_relu')
+    net = tf.keras.layers.Dense(net, 20, activation_fn='leaky_relu')
+    out = tf.keras.layers.Dense(net, 1)    
+    return out  
 
 class PHY_Reconstruction_Generator(tf.keras.Model):
     def __init__(self):
