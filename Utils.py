@@ -136,8 +136,8 @@ def NN_training(generator, discriminator, data_path, logdir):
     print(f"RUNID: {runid}")
     
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
-    generator_optimizer = tf.keras.optimizers.Adam(1)
-    discriminator_optimizer = tf.keras.optimizers.Adam(1)
+    generator_optimizer = tf.keras.optimizers.Adam(1e-3)
+    discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
     #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     loss_mse = tf.keras.losses.CosineSimilarity(axis=2)   
