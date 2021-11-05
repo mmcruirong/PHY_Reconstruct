@@ -97,7 +97,7 @@ def get_processed_dataset(data_path, split=4/5):
 
     np.savez_compressed("PHY_dataset_random_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
-                        pilot_train=PILOT[train_indices, :, :1, :],
+                        pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
                         groundtruth_train=GROUNDTRUTH[train_indices, :, :, :],
                         csi_test=CSI[test_indices, :, :, :],
@@ -154,7 +154,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     def step(csi, pilot, phy_payload, groundtruth, training):
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_out = generator(phy_payload, training)
+            generated_out = generator(csi, pilot,phy_payload, training)
             
             d_real_logits = discriminator(groundtruth)
             d_fake_logits = discriminator(generated_out)
