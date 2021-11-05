@@ -1,3 +1,4 @@
+from numpy.core.numeric import False_, outer
 import tensorflow as tf
 
 
@@ -63,67 +64,78 @@ def corrector():
     out = tf.math.multiply(out, tf.expand_dims(f_pilot,1))
     return tf.keras.Model(inputs=[f_csi, f_pilot, f_phy], outputs=out)
 
-def generator():       
-    inp = tf.keras.Input(shape=(40,2, 48, 1))
-    out = tf.keras.layers.Dense(inp, 20, activation='leaky_relu') # To be replaced by tf.keras.dense
-    out = tf.keras.layers.Dense(out, 20, activation='leaky_relu')
-    out = tf.keras.layers.Dense(out, 20, activation='leaky_relu')
-    out = tf.keras.layers.Dense(out, 32)
-    out = v_block(out, 256, 4)  # accurate
-    out = tf.keras.layers.Dense(out, 80, activation_fn='leaky_relu')
-    out = tf.keras.layers.Dense(out, 2)
-    out += inp
-    out = tf.keras.layers.Dense(out, 80)  # stable
-    out = tf.keras.layers.Dense(out, 2)
-    return out
-
-def orginal_block(self, net, N, d):
-    net = tf.layers.dense(net, N * d)
-    net = tf.concat([net[:, i*d:(i+1)*d] +
+def generator():
+    def stochastic_block(net, N, d):
+        net = tf.keras.layers.Dense(N * d)(net)
+        net = tf.concat([net[:, i*d:(i+1)*d] +
                         (1e-6 + tf.nn.softplus(net[:, (i+1)*d:(i+2)*d])) *
-                        tf.random_normal(tf.shape(net[:, i*d:(i+1)*d]), 0, 1, dtype=tf.float32)
+                        tf.random.normal(tf.shape(net[:, i*d:(i+1)*d]), 0, 1, dtype=tf.float32)
                         for i in range(N) if not (i % (2*d))], axis=1)
-    return net
+        return net       
+    inp = tf.keras.Input(shape=(40, 48,2))#, activation='leaky_relu'
+    out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    # (None, 2, 5, 6)
+    out = tf.keras.layers.Flatten()(out) # (None, 60)
+    out = stochastic_block(out, 120, 2) # (None, 60)
+    out = tf.keras.layers.Reshape((5,6,2))(out)
 
-def v_block(self, net, N, d):
-    shortcut = net
-    net = tf.layers.dense(net, N * d)
-    net = tf.concat([net[:, i * d:(i + 1) * d] +
-                        (1e-6 + tf.nn.softplus(net[:, (i + 1) * d:(i + 2) * d])) *
-                        tf.random_normal(tf.shape(net[:, i * d:(i + 1) * d]), 0, 1, dtype=tf.float32)
-                        for i in range(N) if not (i % (2 * d))], axis=1)
-    net += shortcut
-    return net
+    out = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+
+    out = tf.keras.layers.Conv2D(filters=2, kernel_size=(3,3), strides=1, padding='same', use_bias=True)(out)
+    out = out * inp
+    return tf.keras.Model(inputs=inp, outputs=out)
+
+
 
 def discriminator():   
-    inp = tf.keras.Input(shape=(40,2, 48, 1))
-    out = tf.keras.layers.Dense(inp, 80, activation_fn='leaky_relu')
-    out = tf.keras.layers.Dense(out, 80, activation_fn='leaky_relu')
-    out = tf.keras.layers.Dense(out, 80, activation_fn='leaky_relu')
-    out = tf.keras.layers.Dense(out, 20, activation_fn='leaky_relu')
-    out = tf.keras.layers.Dense(out, 1)    
-    return out  
+    gen_out = tf.keras.Input(shape=(40, 48,2))
+    out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(gen_out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.GlobalAveragePooling2D()(out)
+    out = tf.keras.layers.Dense(1)(out)
+    return tf.keras.Model(inputs=gen_out, outputs=out)
 
 class PHY_Reconstruction_Generator(tf.keras.Model):
     def __init__(self):
-        self.csi_branch = feature_extractor_csi()
-        self.pilot_branch = feature_extractor_pilot()
-        self.freq_branch = feature_extractor_freq()
-        self.generator = generator()
-        self.PHY_payload_branch = discriminator()
-    def call(self, CSI, Pilot, Freq, PHY_Payload, training=False):
+        super(PHY_Reconstruction_Generator, self).__init__()
+        #self.csi_branch = feature_extractor_csi()
+        #self.pilot_branch = feature_extractor_pilot()
+        #self.freq_branch = feature_extractor_freq()
+        self.phy_generator = generator()
+        #self.PHY_payload_branch = discriminator()
+    def call(self,PHY_Payload, training=False):#, CSI, Pilot, Freq, 
         #csi_features = self.csi_branch(CSI, training=training)
         #pilot_features = self.pilot_branch(Pilot, training=training)
         #freq_features = self.freq_branch(Freq, training=training)
-        phy_payload_generator = self.generator(PHY_Payload, training=training)   
+        PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
+        phy_payload_generator = self.phy_generator(PHY_Payload, training=training)   
         #out = self_correction * estimation_correction * PHY_Payload
         return phy_payload_generator
 
 class PHY_Reconstruction_discriminator(tf.keras.Model):
     def __init__(self):
-        self.PHY_payload_branch = discriminator()
-    def call(self, CSI, Pilot, Freq, PHY_Payload, training=False):
-        phy_payload_discriminator = self.discriminator(PHY_Payload, training=training)     
+        super(PHY_Reconstruction_discriminator, self).__init__()
+        self.phy_discriminator = discriminator()
+    def call(self, PHY_Payload, training=False):
+        PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
+        phy_payload_discriminator = self.phy_discriminator(PHY_Payload, training=training)     
         return phy_payload_discriminator
 
 
