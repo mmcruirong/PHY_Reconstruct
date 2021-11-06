@@ -22,7 +22,7 @@ def data_preprocessing_for_each_payload(data):
     groundtruth =[]    
     CSI = data[0] # (5000, 1)
     Pilots = data[1] 
-    Phypayload = data[7] # double
+    Phypayload = data[6] # double
     Groundtruth = data[4]
     #temp = Phypayload[1][0].reshape(40,48,1)
     #temp1 = temp.reshape(40,48,1)
@@ -95,7 +95,7 @@ def get_processed_dataset(data_path, split=4/5):
     
     #test_indices = list(range(0, 5000))
 
-    np.savez_compressed("PHY_dataset_random_" + str(split), 
+    np.savez_compressed("PHY_dataset_raw_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -141,6 +141,7 @@ def NN_training(generator, discriminator, data_path, logdir):
 
     #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     loss_mse = tf.keras.losses.CosineSimilarity(axis=2)   
+    #loss_mse = tf.keras.losses.MeanSquaredError(axis=2)
     MSE_loss = tf.metrics.Mean()
     Accuracy = tf.metrics.Mean()
     G_loss = tf.metrics.Mean()
