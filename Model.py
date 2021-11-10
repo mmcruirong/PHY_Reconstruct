@@ -130,20 +130,20 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
             tf.keras.layers.Dense(units=5*6*4, activation=tf.nn.leaky_relu),
             tf.keras.layers.Reshape(target_shape=(5, 6, 4)),
             tf.keras.layers.Conv2DTranspose(
-                filters=64, kernel_size=3, strides=2, padding='same', use_bias=False,
+                filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False,
                 activation=tf.nn.leaky_relu),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Conv2DTranspose(
-                filters=32, kernel_size=3, strides=2, padding='same', use_bias=False,
+                filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False,
                 activation=tf.nn.leaky_relu),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Conv2DTranspose(
-                filters=16, kernel_size=3, strides=2, padding='same', use_bias=False,
+                filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False,
                 activation=tf.nn.leaky_relu),
             tf.keras.layers.BatchNormalization(),
             # No activation
             tf.keras.layers.Conv2DTranspose(
-                filters=1, kernel_size=3, strides=1, padding='same')])
+                filters=2, kernel_size=(3,3), strides=1, padding='same')])
         #self.PHY_payload_branch = discriminator()
     def call(self, CSI, Pilot, PHY_Payload, training=False):#, CSI, Pilot, Freq, 
         csi_features = self.csi_branch(CSI, training=training)
