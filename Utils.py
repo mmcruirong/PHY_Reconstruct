@@ -29,10 +29,6 @@ def data_preprocessing_for_each_payload(data):
     #print(Phypayload[1][0][0].reshape(40,48,1).shape)
     #print(temp[0])
     num_samples = CSI.shape[0]
-    # mapping = np.array([1, 3,-3,-1])
-    #mapping = np.array([-3, 3, -1, 1])
-    #temp2= Groundtruth[1][0].reshape(40, 48, 1)
-    #print(temp2[0])
     for i_sample in range(num_samples):
         #csi_out.append(np.concatenate((np.real(CSI[i_sample][0]).reshape(64, 1), np.imag(CSI[i_sample][0]).reshape(64, 1)), axis=-1))
         #pilot_out.append(np.concatenate((np.real(Pilots[i_sample][0]).reshape(40,4,1), np.imag(Pilots[i_sample][0]).reshape(40,4, 1)), axis=-1))
@@ -118,9 +114,9 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         phy_payload_test = data['phy_payload_test'].astype(np.float32)
         groundtruth_test= data['groundtruth_test'].astype(np.float32)
 
-    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train)).prefetch(1)
+    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train)).cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
-    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test)).prefetch(1)
+    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test)).cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
     
     
@@ -148,7 +144,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     D_loss = tf.metrics.Mean()
     
         
-    train_data, test_data = load_processed_dataset(data_path, 500, 32, 32)
+    train_data, test_data = load_processed_dataset(data_path, 500, 256, 256)
     print("The dataset has been loaded!")
 
     @tf.function

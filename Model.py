@@ -30,7 +30,7 @@ def feature_extractor_pilot():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(4)(out)
+    out = tf.keras.layers.Dense(192)(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 
@@ -64,7 +64,15 @@ def generator():
                         (1e-6 + tf.nn.softplus(net[:, (i+1)*d:(i+2)*d])) *
                         tf.random.normal(tf.shape(net[:, i*d:(i+1)*d]), 0, 1, dtype=tf.float32)
                         for i in range(N) if not (i % (2*d))], axis=1)
-        return net       
+        return net
+
+    def stochastic_block_v1(net, N, d):
+        net = tf.keras.layers.Dense(N * d)(net)
+        net = tf.concat([net[:, i*d:(i+1)*d] +
+                        (1e-6 + tf.nn.softplus(net[:, (i+1)*d:(i+2)*d])) *
+                        tf.random.uniform(tf.shape(net[:, i*d:(i+1)*d]), 0, 1, dtype=tf.float32)
+                        for i in range(N) if not (i % (2*d))], axis=1)
+        return net  
     inp = tf.keras.Input(shape=(40, 48,2))#, activation='leaky_relu'
     out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -73,17 +81,20 @@ def generator():
     out = tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(out)   # (None, 2, 5, 6)
     out = tf.keras.layers.Flatten()(out) # (None, 60)
-    out = stochastic_block(out, 120, 2) # (None, 60)
+    out = stochastic_block_v1(out, 120, 2) # (None, 60)
     out = tf.keras.layers.Reshape((5,6,2))(out)
     out = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)    
     out = tf.keras.layers.Conv2D(filters=2, kernel_size=(3,3), strides=1, padding='same', use_bias=True)(out)
-    out = out #+ inp
+    out = out + inp
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv2D(filters=2, kernel_size=(3,3), strides=1, padding='same', use_bias=True)(out)
+
+    #
     return tf.keras.Model(inputs=inp, outputs=out)
 
 
@@ -102,7 +113,7 @@ def discriminator():
     out = tf.keras.layers.LeakyReLU(alpha=0.3)(out)
     out = tf.keras.layers.Conv2D(filters=64, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(out)
 
-    out = tf.keras.layers.Dense(10)(out)
+    out = tf.keras.layers.Dense(1)(out)
     return tf.keras.Model(inputs=gen_out, outputs=out)
 
 class PHY_Reconstruction_Generator(tf.keras.Model):
@@ -114,6 +125,7 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         self.concat_layer = tf.keras.layers.Concatenate(axis=-1)
         self.fusion_layer_1 = tf.keras.layers.Dense(64, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
         self.fusion_layer_2 = tf.keras.layers.Dense(64, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
+        #self.activation = tf.keras.layers.Activation('sigmoid')
         self.DeConv_net_2 = tf.keras.Sequential([
             tf.keras.layers.Dense(units=5*6*4, activation=tf.nn.leaky_relu),
             tf.keras.layers.Reshape(target_shape=(5, 6, 4)),
@@ -142,8 +154,9 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         joint_features = self.fusion_layer_1(joint_features)
         joint_features = self.fusion_layer_2(joint_features)
         estimation_correction = self.DeConv_net_2(joint_features)
-        out = phy_payload_generator+ estimation_correction  +  PHY_Payload
-        #out = self_correction    * estimation_correction
+        out = phy_payload_generator * estimation_correction +  PHY_Payload
+        #out =  self.activation(out)
+        #out = self_correction    * estimation_correction  
         return out
 
 class PHY_Reconstruction_discriminator(tf.keras.Model):
@@ -206,7 +219,7 @@ class PHY_Reconstruction_Net_(tf.keras.Model):
                 activation=tf.nn.relu),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Conv2DTranspose(
-                filters=32, kernel_size=3, strides=2, padding='same', use_bias=False,
+                filters=32, kern X = Activation('relu')(X)el_size=3, strides=2, padding='same', use_bias=False,
                 activation=tf.nn.leaky_relu),
             tf.keras.layers.BatchNormalization(),
             # No activation
