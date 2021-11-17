@@ -1,4 +1,4 @@
-from Model import PHY_Reconstruction_Generator,PHY_Reconstruction_discriminator
+from Model_LSTM import PHY_Reconstruction_Generator,PHY_Reconstruction_discriminator
 from Utils_LSTM import NN_training
 import tensorflow as tf
 if __name__ == "__main__":

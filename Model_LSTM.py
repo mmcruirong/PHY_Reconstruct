@@ -113,7 +113,7 @@ def discriminator():
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Conv2D(filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
 
-    out = tf.keras.layers.Dense(1)(out)
+    out = tf.keras.layers.Dense(40)(out)
     return tf.keras.Model(inputs=gen_out, outputs=out)
 
 class PHY_Reconstruction_Generator(tf.keras.Model):
@@ -150,12 +150,19 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         csi_features = self.csi_branch(CSI, training=training)
         pilot_features = self.pilot_branch(Pilot, training=training)
         #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
-        phy_payload_generator = self.phy_generator(PHY_Payload, training=training)        
+        PHY_Payload_Real = PHY_Payload[:,:,:,0]
+        PHY_Payload_IMAG = PHY_Payload[:,:,:,1]
+        whole_seq_output_real = self.phy_lstm(PHY_Payload_Real)
+        whole_seq_output_imag = self.phy_lstm(PHY_Payload_IMAG)
+        LSTM_PHY_Payload = tf.stack([whole_seq_output_real,whole_seq_output_imag],3)
+        phy_payload_generator = self.phy_generator(LSTM_PHY_Payload, training=training)   
+        #LSTM_PHY_Payload     
         joint_features = self.concat_layer([csi_features, pilot_features])
         joint_features = self.fusion_layer_1(joint_features)
         joint_features = self.fusion_layer_2(joint_features)
-        estimation_correction = self.DeConv_net_2(joint_features)
-        out = phy_payload_generator * estimation_correction +  PHY_Payload
+        estimation_correction = self.DeConv_net_2(joint_features)        
+        out = phy_payload_generator * estimation_correction +  PHY_Payload   
+        #out = self.phy_generator(out, training=training)     
         #out =  self.activation(out)
         #out = self_correction    * estimation_correction  
         return out
@@ -166,8 +173,13 @@ class PHY_Reconstruction_discriminator(tf.keras.Model):
         self.phy_discriminator = discriminator()
         self.phy_lstm = tf.keras.layers.LSTM(48, return_sequences=True) # (None, 40, 48)
     def call(self, PHY_Payload, training=False):
-        #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)        
-        phy_payload_discriminator = self.phy_discriminator(PHY_Payload, training=training)     
+        #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
+        PHY_Payload_Real = PHY_Payload[:,:,:,0]
+        PHY_Payload_IMAG = PHY_Payload[:,:,:,1]
+        whole_seq_output_real = self.phy_lstm(PHY_Payload_Real)
+        whole_seq_output_imag = self.phy_lstm(PHY_Payload_IMAG)
+        LSTM_PHY_Payload = tf.stack([whole_seq_output_real,whole_seq_output_imag],3) #LSTM_PHY_Payload
+        phy_payload_discriminator = self.phy_discriminator(LSTM_PHY_Payload, training=training)     
         return phy_payload_discriminator
 """               
 class PHY_Reconstruction_Net_(tf.keras.Model):

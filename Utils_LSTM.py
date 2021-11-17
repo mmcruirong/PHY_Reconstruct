@@ -154,13 +154,13 @@ def NN_training(generator, discriminator, data_path, logdir):
             generated_out = generator(csi, pilot,phy_payload, training)
             
             d_real_logits = discriminator(groundtruth)
-            d_fake_logits = discriminator(generated_out)
-            d_loss_real = -tf.reduce_mean(d_real_logits)
+            d_fake_logits = discriminator(phy_payload)
+            d_loss_real = tf.reduce_mean(d_real_logits)
             d_loss_fake = tf.reduce_mean(d_fake_logits)
 
             disc_loss = d_loss_real + d_loss_fake
             reconstruction_loss = loss_mse(groundtruth, generated_out)
-            gen_loss = -d_loss_fake + reconstruction_loss
+            gen_loss = d_loss_fake + reconstruction_loss
 
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
