@@ -1,5 +1,5 @@
 from Model import PHY_Reconstruction_Generator,PHY_Reconstruction_discriminator
-from Utils import NN_training
+from Utils_LSTM import NN_training
 import tensorflow as tf
 if __name__ == "__main__":
     gpus = tf.config.experimental.list_physical_devices('GPU')
