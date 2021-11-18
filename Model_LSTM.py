@@ -101,19 +101,20 @@ def generator():
 
 def discriminator():   
     gen_out = tf.keras.Input(shape=(40, 48,2))
-    out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(gen_out)
+    out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(gen_out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv2D(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv2D(filters=16, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(out)
-    out = tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    #out = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(out)
+    out = tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv2D(filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
-
-    out = tf.keras.layers.Dense(40)(out)
+    out = tf.keras.layers.Conv2D(filters=1, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(out)
+    out = tf.squeeze(out, axis = 3)
+    out = tf.keras.layers.Dense(2)(out)
+    #print(out.shape)
     return tf.keras.Model(inputs=gen_out, outputs=out)
 
 class PHY_Reconstruction_Generator(tf.keras.Model):
@@ -150,7 +151,7 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         csi_features = self.csi_branch(CSI, training=training)
         pilot_features = self.pilot_branch(Pilot, training=training)
         #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
-        PHY_Payload_Real = PHY_Payload[:,:,:,0]
+        '''PHY_Payload_Real = PHY_Payload[:,:,:,0]
         PHY_Payload_IMAG = PHY_Payload[:,:,:,1]
         whole_seq_output_real = self.phy_lstm(PHY_Payload_Real)
         whole_seq_output_imag = self.phy_lstm(PHY_Payload_IMAG)
@@ -161,7 +162,19 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         joint_features = self.fusion_layer_1(joint_features)
         joint_features = self.fusion_layer_2(joint_features)
         estimation_correction = self.DeConv_net_2(joint_features)        
-        out = phy_payload_generator * estimation_correction +  PHY_Payload   
+        out = phy_payload_generator * estimation_correction +  PHY_Payload  ''' 
+        joint_features = self.concat_layer([csi_features, pilot_features])
+        joint_features = self.fusion_layer_1(joint_features)
+        joint_features = self.fusion_layer_2(joint_features)
+        estimation_correction = self.DeConv_net_2(joint_features) 
+        PHY_Corrected = PHY_Payload * estimation_correction +  PHY_Payload
+        PHY_Payload_Real = PHY_Corrected[:,:,:,0]
+        PHY_Payload_IMAG = PHY_Corrected[:,:,:,1]
+        whole_seq_output_real = self.phy_lstm(PHY_Payload_Real)
+        whole_seq_output_imag = self.phy_lstm(PHY_Payload_IMAG)
+        LSTM_PHY_Payload = tf.stack([whole_seq_output_real,whole_seq_output_imag],3)
+        out = self.phy_generator(LSTM_PHY_Payload, training=training)   +  PHY_Payload       
+        #LSTM_PHY_Payload    
         #out = self.phy_generator(out, training=training)     
         #out =  self.activation(out)
         #out = self_correction    * estimation_correction  

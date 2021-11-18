@@ -136,8 +136,9 @@ def NN_training(generator, discriminator, data_path, logdir):
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
     #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    loss_mse = tf.keras.losses.CosineSimilarity(axis=2)
+    loss_mse = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     loss_crossentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     #loss_mse = tf.keras.losses.MeanSquaredError(axis=2)
     MSE_loss = tf.metrics.Mean()
     Accuracy = tf.metrics.Mean()
@@ -145,7 +146,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     D_loss = tf.metrics.Mean()
     
         
-    train_data, test_data = load_processed_dataset(data_path, 500, 256, 256)
+    train_data, test_data = load_processed_dataset(data_path, 500, 512, 512)
     print("The dataset has been loaded!")
 
     @tf.function
@@ -155,16 +156,20 @@ def NN_training(generator, discriminator, data_path, logdir):
             generated_out = generator(csi, pilot,phy_payload, training)
             
             d_real_logits = discriminator(groundtruth)
+            #print(d_real_logits.shape)
             d_fake_logits = discriminator(generated_out)
             #d_loss_real = tf.reduce_mean(d_real_logits)
             #d_loss_fake = tf.reduce_mean(d_fake_logits)
+            #d_loss_real = loss_cosine(tf.ones_like(d_real_logits),d_real_logits)
+            #d_loss_fake = loss_cosine(tf.zeros_like(d_fake_logits),d_fake_logits)
             d_loss_real = loss_crossentropy(tf.ones_like(d_real_logits),d_real_logits)
             d_loss_fake = loss_crossentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
-
             disc_loss = d_loss_real + d_loss_fake
             reconstruction_loss = loss_mse(groundtruth, generated_out)
-            gen_loss = d_loss_fake + reconstruction_loss
-            #gen_loss = reconstruction_loss
+            #reconstruction_loss = loss_crossentropy(tf.ones_like(d_fake_logits), d_fake_logits)
+
+            gen_loss = -d_loss_fake + reconstruction_loss
+            #gen_loss = d_fake_logits
 
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
