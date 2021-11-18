@@ -163,7 +163,7 @@ def NN_training(generator, discriminator, data_path, logdir):
 
             disc_loss = d_loss_real + d_loss_fake
             reconstruction_loss = loss_mse(groundtruth, generated_out)
-            gen_loss = d_loss_fake + reconstruction_loss
+            gen_loss = -d_loss_fake + reconstruction_loss
             #gen_loss = reconstruction_loss
 
         if training:
