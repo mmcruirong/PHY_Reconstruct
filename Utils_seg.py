@@ -163,10 +163,10 @@ def NN_training(generator, discriminator, data_path, logdir):
     print("The dataset has been loaded!")
 
     @tf.function
-    def step(csi, pilot, phy_payload, groundtruth, training):
+    def step(csi, pilot, phy_payload, groundtruth, label, training):
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_out = generator(csi, pilot,phy_payload, training)
+            generated_out = generator(csi, pilot,phy_payload, label,training)
             
             d_real_logits = discriminator(groundtruth)
             #print(d_real_logits.shape)
