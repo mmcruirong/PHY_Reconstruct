@@ -104,12 +104,12 @@ def get_processed_dataset(data_path, split=4/5):
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
                         groundtruth_train=GROUNDTRUTH[train_indices, :, :, :],
-                        LABEL_train=LABEL[train_indices, :, :, :],
+                        label_train=LABEL[train_indices, :, :, :],
                         csi_test=CSI[test_indices, :, :, :],
                         pilot_test=PILOT[test_indices, :, :, :],
                         phy_payload_test=PHY_PAYLOAD[test_indices, :, :, :],
                         groundtruth_test=GROUNDTRUTH[test_indices, :, :, :],
-                        LABEL_test=LABEL[test_indices, :, :, :])
+                        label_test=LABEL[test_indices, :, :, :])
     print(num_samples)
 
 def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_batch_size):
@@ -118,18 +118,18 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         pilot_train = data['pilot_train'].astype(np.float32)        
         phy_payload_train = data['phy_payload_train'].astype(np.float32)
         groundtruth_train = data['groundtruth_train'].astype(np.float32)
-        label_train = data['LABEL_train'].astype(np.float32)
+        label_train = data['label_train'].astype(np.intc)
 
 
         csi_test = data['csi_test'].astype(np.float32)
         pilot_test = data['pilot_test'].astype(np.float32)       
         phy_payload_test = data['phy_payload_test'].astype(np.float32)
         groundtruth_test= data['groundtruth_test'].astype(np.float32)
-        label_test = data['LABEL_test'].astype(np.float32)
+        label_test = data['label_test'].astype(np.intc)
 
     train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train,label_train)).cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
-    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test,label_test)).cache().prefetch(tf.data.AUTOTUNE)
+    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test, label_test)).cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
     
     
@@ -205,9 +205,9 @@ def NN_training(generator, discriminator, data_path, logdir):
     best_validation_acc = 0
     print("start training...")
     for epoch in range(EPOCHS):
-        for csi, pilot, phy_payload, groundtruth in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
+        for csi, pilot, phy_payload, groundtruth, label in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
             training_step += 1
-            step(csi, pilot, phy_payload, groundtruth, training=True)
+            step(csi, pilot, phy_payload, groundtruth, label, training=True)
 
             if training_step % 200 == 0:
                 with writer.as_default():
