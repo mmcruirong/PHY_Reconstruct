@@ -16,4 +16,4 @@ if __name__ == "__main__":
 
     PHY_Net_gen = PHY_Reconstruction_Generator()
     PHY_Net_disc = PHY_Reconstruction_discriminator()
-    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_random_0.8.npz", "logs")
+    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_randomV1_0.8.npz", "logs")

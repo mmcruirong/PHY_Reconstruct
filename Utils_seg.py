@@ -18,17 +18,19 @@ def data_preprocessing_for_each_payload(data):
     csi_out = []
     pilot_out = []   
     phy_payload = []
+    Tx_label = []
     #gt_out = []
     groundtruth =[]    
     CSI = data[0] # (5000, 1)
     Pilots = data[1] 
     Phypayload = data[5] # Constellation -> Rx after EQ RAW -> Raw signal
     Groundtruth = data[4]
-    temp = np.transpose(Groundtruth[1][0].reshape(48,40,1),(1,0,2))
-    temp1 =  Phypayload[1][0].reshape(40,48,1)
-    #print(Phypayload[1][0][0].reshape(40,48,1).shape)
-    print(temp[0])
-    print(temp1[0])
+    Label = data[8]
+    #mapping = np.array([0,1,2,3])
+    #temp = mapping[Groundtruth[1][0]]
+    #temp1 = temp.reshape(40,48,1)
+    #print(temp[0])
+    #print(temp[0])
     num_samples = CSI.shape[0]
     for i_sample in range(num_samples):
         #csi_out.append(np.concatenate((np.real(CSI[i_sample][0]).reshape(64, 1), np.imag(CSI[i_sample][0]).reshape(64, 1)), axis=-1))
@@ -44,43 +46,48 @@ def data_preprocessing_for_each_payload(data):
         pilot_out.append(np.concatenate((pilot_amp,pilot_angle),axis = 2))       
         #pilot_out.append([pilot_amp,pilot_angle])  
        
-        phy_payload_angle = np.real(Phypayload[i_sample][0].reshape(40,48,1))
-        phy_payload_amp = np.imag(Phypayload[i_sample][0].reshape(40,48,1))
+        phy_payload_angle = np.real(Phypayload[i_sample][0].reshape(1920, 1,1)) 
+        phy_payload_amp = np.imag(Phypayload[i_sample][0].reshape(1920, 1,1))
         phy_payload.append((np.concatenate((phy_payload_amp,phy_payload_angle),axis = 2)))      
         #phy_payload.append([phy_payload_amp,phy_payload_angle])
         #groundtruth.append(np.transpose(mapping[np.intc(Groundtruth[i_sample][0])]).reshape(40, 48, 1))
-        groundtruth_angle = np.transpose(np.real(Groundtruth[i_sample][0].reshape(48,40,1)),(1,0,2))
-        groundtruth_amp = np.transpose(np.imag(Groundtruth[i_sample][0].reshape(48,40,1)),(1,0,2))
+        groundtruth_angle = np.real(Groundtruth[i_sample][0].reshape(1920,1,1,order = 'F'))
+        groundtruth_amp = np.imag(Groundtruth[i_sample][0].reshape(1920,1,1,order = 'F'))
         groundtruth.append((np.concatenate((groundtruth_amp,groundtruth_angle),axis = 2)))
+
+        Tx_label.append(Label[i_sample][0].reshape(1920,1,1))
         #groundtruth.append([groundtruth_amp,groundtruth_angle]) 
-    csi_out = np.array(csi_out)# (1, 48, 2)
-    pilot_out = np.array(pilot_out) # (40, 4, 2)
-    phy_payload = np.array(phy_payload) # (40, 48, 2)
-    groundtruth = np.array(groundtruth) # (40, 48, 2)
-    
+    csi_out = np.array(csi_out)# (2, 48, 1)
+    pilot_out = np.array(pilot_out) # (2, 40, 4)
+    phy_payload = np.array(phy_payload) # (2, 40, 48)
+    groundtruth = np.array(groundtruth) # (2, 40, 48)
+    Tx_label = np.array(Tx_label)
     print('CSI_SHAPE=',csi_out.shape)
     print('pilot_SHAPE=',pilot_out.shape)
     print('phy_SHAPE=',phy_payload.shape)
     print('ground_SHAPE=',groundtruth.shape)
-
-    return csi_out, pilot_out, phy_payload, groundtruth
+    print('label_SHAPE=',Tx_label.shape)
+    return csi_out, pilot_out, phy_payload, groundtruth,Tx_label
 
 def get_processed_dataset(data_path, split=4/5):
     file_list = os.listdir(data_path)
     CSI = np.empty((0, 1, 48, 2))
     PILOT = np.empty((0, 40, 4, 2))
-    PHY_PAYLOAD = np.empty((0, 40, 48, 2))
-    GROUNDTRUTH = np.empty((0, 40, 48, 2))
+    PHY_PAYLOAD = np.empty((0, 1920, 1, 2))
+    GROUNDTRUTH = np.empty((0, 1920, 1, 2))
+    LABEL = np.empty((0, 1920, 1, 1))
     #GT = np.empty((0, 40, 48, 1))
     file_list.sort()
     # print(file_list)
     for file in file_list:
        data_chunk = data_loader_for_each_payload(data_path + '/' + file)
-       csi_out, pilot_out, phy_payload, groudtruth = data_preprocessing_for_each_payload(data_chunk)
+       csi_out, pilot_out, phy_payload, groudtruth, Tx_label = data_preprocessing_for_each_payload(data_chunk)
        CSI = np.concatenate([CSI, csi_out], axis=0)
        PILOT = np.concatenate([PILOT, pilot_out], axis=0)
        PHY_PAYLOAD = np.concatenate([PHY_PAYLOAD, phy_payload], axis=0)
        GROUNDTRUTH = np.concatenate([GROUNDTRUTH, groudtruth], axis=0)
+       LABEL = np.concatenate([LABEL, Tx_label], axis=0)
+
        #GT = np.concatenate([GT, gt], axis=0)
     
     num_samples = CSI.shape[0]
@@ -92,15 +99,17 @@ def get_processed_dataset(data_path, split=4/5):
     
     #test_indices = list(range(0, 5000))
 
-    np.savez_compressed("PHY_dataset_randomV1_" + str(split), 
+    np.savez_compressed("PHY_dataset_Seg_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
                         groundtruth_train=GROUNDTRUTH[train_indices, :, :, :],
+                        LABEL_train=LABEL[train_indices, :, :, :],
                         csi_test=CSI[test_indices, :, :, :],
                         pilot_test=PILOT[test_indices, :, :, :],
                         phy_payload_test=PHY_PAYLOAD[test_indices, :, :, :],
-                        groundtruth_test=GROUNDTRUTH[test_indices, :, :, :])
+                        groundtruth_test=GROUNDTRUTH[test_indices, :, :, :],
+                        LABEL_test=LABEL[test_indices, :, :, :])
     print(num_samples)
 
 def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_batch_size):
@@ -137,7 +146,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
     #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    loss_mse = tf.keras.losses.MeanSquaredError()
+    loss_mse = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     loss_crossentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     #loss_mse = tf.keras.losses.MeanSquaredError(axis=2)
@@ -159,16 +168,16 @@ def NN_training(generator, discriminator, data_path, logdir):
             d_real_logits = discriminator(groundtruth)
             #print(d_real_logits.shape)
             d_fake_logits = discriminator(generated_out)
-            d_loss_real = tf.reduce_mean(d_real_logits)
-            d_loss_fake = tf.reduce_mean(d_fake_logits)
-            #d_loss_real = loss_cosine(-tf.ones_like(d_real_logits),d_real_logits)
+            #d_loss_real = tf.reduce_mean(d_real_logits)
+            #d_loss_fake = tf.reduce_mean(d_fake_logits)
+            #d_loss_real = loss_cosine(tf.ones_like(d_real_logits),d_real_logits)
             #d_loss_fake = loss_cosine(tf.zeros_like(d_fake_logits),d_fake_logits)
-            #d_loss_real = loss_crossentropy(tf.ones_like(d_real_logits),d_real_logits)
-            #d_loss_fake = loss_crossentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
+            d_loss_real = loss_crossentropy(tf.ones_like(d_real_logits),d_real_logits)
+            d_loss_fake = loss_crossentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
             disc_loss = d_loss_real + d_loss_fake
             reconstruction_loss = loss_mse(groundtruth, generated_out)
             #reconstruction_loss = loss_crossentropy(tf.ones_like(d_fake_logits), d_fake_logits)
-            gen_loss = d_loss_fake + 10*reconstruction_loss
+            gen_loss = d_loss_fake + reconstruction_loss
             #gen_loss = d_fake_logits
 
 
@@ -181,7 +190,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             for w in discriminator.trainable_variables:
                 w.assign(tf.clip_by_value(w, -0.04, 0.04))
         #accuracy(gen_loss)
-        G_loss(-d_loss_fake)
+        G_loss(- d_loss_fake)
         D_loss(disc_loss)
         MSE_loss(reconstruction_loss)
         x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
@@ -200,8 +209,8 @@ def NN_training(generator, discriminator, data_path, logdir):
             if training_step % 200 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
-                    tf.summary.scalar('train/d_loss', D_loss.result(), training_step)
-                    tf.summary.scalar('train/g_loss', G_loss.result(), training_step)
+                    tf.summary.scalar('train/d_loss', G_loss.result(), training_step)
+                    tf.summary.scalar('train/g_loss', D_loss.result(), training_step)
                     tf.summary.scalar('train/mse_loss', MSE_loss.result(), training_step)
                     tf.summary.scalar('train/acc', Accuracy.result(), training_step)
                     G_loss.reset_states()
@@ -217,8 +226,8 @@ def NN_training(generator, discriminator, data_path, logdir):
             # print((generated_out.numpy())[0])
 
             with writer.as_default():
-                tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
-                tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
+                tf.summary.scalar('test/d_loss', G_loss.result(), training_step)
+                tf.summary.scalar('test/g_loss', D_loss.result(), training_step)
                 tf.summary.scalar('test/mse_loss', MSE_loss.result(), training_step)
                 tf.summary.scalar('test/acc', Accuracy.result(), training_step)
                 if Accuracy.result() > best_validation_acc:
