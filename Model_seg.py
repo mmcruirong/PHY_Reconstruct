@@ -122,7 +122,7 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         self.csi_branch = feature_extractor_csi()
         self.pilot_branch = feature_extractor_pilot()        
         self.phy_generator = generator()
-        self.phy_lstm = tf.keras.layers.LSTM(48, return_sequences=True) # (None, 40, 48)
+        self.phy_lstm = tf.keras.layers.LSTM(4, return_sequences=True) # (None, 40, 48)
         self.concat_layer = tf.keras.layers.Concatenate(axis=-1)
         self.fusion_layer_1 = tf.keras.layers.Dense(64, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
         self.fusion_layer_2 = tf.keras.layers.Dense(64, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
@@ -183,7 +183,7 @@ class PHY_Reconstruction_discriminator(tf.keras.Model):
     def __init__(self):
         super(PHY_Reconstruction_discriminator, self).__init__()
         self.phy_discriminator = discriminator()
-        self.phy_lstm = tf.keras.layers.LSTM(48, return_sequences=True) # (None, 40, 48)
+        self.phy_lstm = tf.keras.layers.LSTM(4, return_sequences=True) # (None, 40, 48)
     def call(self, PHY_Payload, training=False):
         #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
         PHY_Payload_Real = PHY_Payload[:,:,:,0]
