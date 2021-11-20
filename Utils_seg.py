@@ -118,15 +118,18 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         pilot_train = data['pilot_train'].astype(np.float32)        
         phy_payload_train = data['phy_payload_train'].astype(np.float32)
         groundtruth_train = data['groundtruth_train'].astype(np.float32)
+        label_train = data['LABEL_train'].astype(np.float32)
+
 
         csi_test = data['csi_test'].astype(np.float32)
         pilot_test = data['pilot_test'].astype(np.float32)       
         phy_payload_test = data['phy_payload_test'].astype(np.float32)
         groundtruth_test= data['groundtruth_test'].astype(np.float32)
+        label_test = data['LABEL_test'].astype(np.float32)
 
-    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train)).cache().prefetch(tf.data.AUTOTUNE)
+    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train,label_train)).cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
-    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test)).cache().prefetch(tf.data.AUTOTUNE)
+    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test,label_test)).cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
     
     
