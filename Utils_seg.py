@@ -18,7 +18,7 @@ def data_preprocessing_for_each_payload(data):
     csi_out = []
     pilot_out = []   
     phy_payload = []
-    Tx_label = []
+    label = []
     #gt_out = []
     groundtruth =[]    
     CSI = data[0] # (5000, 1)
@@ -55,19 +55,19 @@ def data_preprocessing_for_each_payload(data):
         groundtruth_amp = np.imag(Groundtruth[i_sample][0].reshape(1920,1,1,order = 'F'))
         groundtruth.append((np.concatenate((groundtruth_amp,groundtruth_angle),axis = 2)))
 
-        Tx_label.append(Label[i_sample][0].reshape(1920,1,1))
+        label.append(Label[i_sample][0].reshape(1920,1,1))
         #groundtruth.append([groundtruth_amp,groundtruth_angle]) 
     csi_out = np.array(csi_out)# (2, 48, 1)
     pilot_out = np.array(pilot_out) # (2, 40, 4)
     phy_payload = np.array(phy_payload) # (2, 40, 48)
     groundtruth = np.array(groundtruth) # (2, 40, 48)
-    Tx_label = np.array(Tx_label)
+    label = np.array(label)
     print('CSI_SHAPE=',csi_out.shape)
     print('pilot_SHAPE=',pilot_out.shape)
     print('phy_SHAPE=',phy_payload.shape)
     print('ground_SHAPE=',groundtruth.shape)
-    print('label_SHAPE=',Tx_label.shape)
-    return csi_out, pilot_out, phy_payload, groundtruth,Tx_label
+    print('label_SHAPE=',label.shape)
+    return csi_out, pilot_out, phy_payload, groundtruth,label
 
 def get_processed_dataset(data_path, split=4/5):
     file_list = os.listdir(data_path)
@@ -140,7 +140,7 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     return train_data, test_data
 
 def NN_training(generator, discriminator, data_path, logdir):
-    EPOCHS = 400
+    EPOCHS = 200
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
     
@@ -149,8 +149,8 @@ def NN_training(generator, discriminator, data_path, logdir):
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
     #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    loss_mse = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
-    loss_crossentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    #loss_mse = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
+    loss_crossentropy = tf.keras.losses.CategoricalCrossentropy()
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     #loss_mse = tf.keras.losses.MeanSquaredError(axis=2)
     MSE_loss = tf.metrics.Mean()
@@ -159,14 +159,14 @@ def NN_training(generator, discriminator, data_path, logdir):
     D_loss = tf.metrics.Mean()
     
         
-    train_data, test_data = load_processed_dataset(data_path, 500, 512, 512)
+    train_data, test_data = load_processed_dataset(data_path, 500, 1, 1)
     print("The dataset has been loaded!")
 
     @tf.function
     def step(csi, pilot, phy_payload, groundtruth, label, training):
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_out = generator(csi, pilot,phy_payload, label,training)
+            generated_out = generator(csi, pilot,phy_payload,training)
             
             d_real_logits = discriminator(groundtruth)
             #print(d_real_logits.shape)
@@ -178,7 +178,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             d_loss_real = loss_crossentropy(tf.ones_like(d_real_logits),d_real_logits)
             d_loss_fake = loss_crossentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
             disc_loss = d_loss_real + d_loss_fake
-            reconstruction_loss = loss_mse(groundtruth, generated_out)
+            reconstruction_loss = loss_cosine(groundtruth, generated_out)
             #reconstruction_loss = loss_crossentropy(tf.ones_like(d_fake_logits), d_fake_logits)
             gen_loss = d_loss_fake + reconstruction_loss
             #gen_loss = d_fake_logits
@@ -206,6 +206,11 @@ def NN_training(generator, discriminator, data_path, logdir):
     print("start training...")
     for epoch in range(EPOCHS):
         for csi, pilot, phy_payload, groundtruth, label in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
+            # CSI (1,48,1,2) -> (40,48,1,2)
+            # PILOT (1,40,4,2) -> (40,40,4,2)
+            # PHY (1,1920,1,2) -> (40,48,1,2)
+            # Groundtruth(1,1920,1,2)-> (40,48,1,2)
+            # label (1,1920,1,1) -> (40,48,1,1)
             training_step += 1
             step(csi, pilot, phy_payload, groundtruth, label, training=True)
 
