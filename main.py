@@ -1,5 +1,5 @@
-from Model_LSTM import PHY_Reconstruction_Generator,PHY_Reconstruction_discriminator
-from Utils_LSTM import NN_training
+from Model_seg import PHY_Reconstruction_Generator,PHY_Reconstruction_discriminator
+from Utils_seg import NN_training
 import tensorflow as tf
 if __name__ == "__main__":
     gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -16,4 +16,4 @@ if __name__ == "__main__":
 
     PHY_Net_gen = PHY_Reconstruction_Generator()
     PHY_Net_disc = PHY_Reconstruction_discriminator()
-    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_randomV1_0.8.npz", "logs")
+    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_Seg_0.8.npz", "logs")
