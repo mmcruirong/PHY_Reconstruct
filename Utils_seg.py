@@ -140,7 +140,7 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     return train_data, test_data
 
 def NN_training(generator, discriminator, data_path, logdir):
-    EPOCHS = 200
+    EPOCHS = 6000
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
     
@@ -197,7 +197,7 @@ def NN_training(generator, discriminator, data_path, logdir):
         D_loss(disc_loss)
         MSE_loss(reconstruction_loss)
         x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
-        Accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(x1[:, :, :, 0], x1[:, :, :, 1]) > 0, tf.float32)))
+        Accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 1]) > 0, tf.float32)))
         #Accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)))
         return generated_out
     
@@ -212,9 +212,21 @@ def NN_training(generator, discriminator, data_path, logdir):
             # Groundtruth(1,1920,1,2)-> (40,48,1,2)
             # label (1,1920,1,1) -> (40,48,1,1)
             training_step += 1
-            step(csi, pilot, phy_payload, groundtruth, label, training=True)
+            Csi_input = tf.squeeze(tf.repeat(csi,40,axis=0),axis = 1)
+            Pilot_input = tf.squeeze(pilot,axis=0)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40,48,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40,48,1,2]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40,48,1,1]),axis = 2)
+            #print('CSI SHAPE = ',Csi_input.shape)
+            #print('Pilot SHAPE = ',Pilot_input.shape)
+            #print('PHY SHAPE = ',PHY_input.shape)
+            #print('GT SHAPE = ',Groundtruth_input.shape)
+            #print('label SHAPE = ',Label_input.shape)
 
-            if training_step % 200 == 0:
+            
+            step(Csi_input, Pilot_input, PHY_input, Groundtruth_input, Label_input, training=True)
+
+            if training_step % 6000 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
                     tf.summary.scalar('train/d_loss', G_loss.result(), training_step)
@@ -230,7 +242,13 @@ def NN_training(generator, discriminator, data_path, logdir):
         MSE_loss.reset_states()
         Accuracy.reset_states()
         for csi, pilot,  phy_payload, label in test_data:
-            generated_out = step(csi, pilot,  phy_payload, label, training=False)
+            # same as training 
+            Csi_input = tf.squeeze(tf.repeat(csi,40,axis=0),axis = 1)
+            Pilot_input = tf.squeeze(pilot,axis=0)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40,48,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40,48,1,2]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40,48,1,1]),axis = 2)
+            generated_out = step(Csi_input, Pilot_input,  PHY_input, training=False)
             # print((generated_out.numpy())[0])
 
             with writer.as_default():
