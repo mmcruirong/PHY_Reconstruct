@@ -119,6 +119,13 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         phy_payload_train = data['phy_payload_train'].astype(np.float32)
         groundtruth_train = data['groundtruth_train'].astype(np.float32)
         label_train = data['label_train'].astype(np.intc)
+        csi_train = csi_train[1000:1500,:,:,:]        
+        pilot_train = pilot_train[1000:1500,:,:,:] 
+        phy_payload_train = phy_payload_train[1000:1500,:,:,:] 
+        groundtruth_train = groundtruth_train[1000:1500,:,:,:]
+        label_train = label_train[1000:1500,:,:,:]
+        #print('PHY SHAPE = ',phy_payload_train.shape )
+   
 
 
         csi_test = data['csi_test'].astype(np.float32)
@@ -127,9 +134,15 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         groundtruth_test= data['groundtruth_test'].astype(np.float32)
         label_test = data['label_test'].astype(np.intc)
 
-    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train,label_train)).cache().prefetch(tf.data.AUTOTUNE)
+        csi_test = csi_test[1000:1100,:,:,:]        
+        pilot_test = pilot_test[1000:1100,:,:,:] 
+        phy_payload_test = phy_payload_test[1000:1100,:,:,:] 
+        groundtruth_test = groundtruth_test[1000:1100,:,:,:]
+        label_test = label_test[1000:1100,:,:,:]
+
+    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train,label_train))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
-    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test, label_test)).cache().prefetch(tf.data.AUTOTUNE)
+    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test, label_test))#.cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
     
     
@@ -140,7 +153,7 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     return train_data, test_data
 
 def NN_training(generator, discriminator, data_path, logdir):
-    EPOCHS = 6000
+    EPOCHS = 200
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
     
@@ -148,9 +161,10 @@ def NN_training(generator, discriminator, data_path, logdir):
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
-    #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True,
+reduction=tf.keras.losses.Reduction.SUM)
     #loss_mse = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
-    loss_crossentropy = tf.keras.losses.CategoricalCrossentropy()
+    loss_crossentropy = tf.keras.losses.CategoricalCrossentropy(reduction=tf.keras.losses.Reduction.SUM)
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     #loss_mse = tf.keras.losses.MeanSquaredError(axis=2)
     MSE_loss = tf.metrics.Mean()
@@ -175,8 +189,8 @@ def NN_training(generator, discriminator, data_path, logdir):
             #d_loss_fake = tf.reduce_mean(d_fake_logits)
             #d_loss_real = loss_cosine(tf.ones_like(d_real_logits),d_real_logits)
             #d_loss_fake = loss_cosine(tf.zeros_like(d_fake_logits),d_fake_logits)
-            d_loss_real = loss_crossentropy(tf.ones_like(d_real_logits),d_real_logits)
-            d_loss_fake = loss_crossentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
+            d_loss_real = loss_binentropy(tf.ones_like(d_real_logits),d_real_logits)
+            d_loss_fake = loss_binentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
             disc_loss = d_loss_real + d_loss_fake
             reconstruction_loss = loss_cosine(groundtruth, generated_out)
             #reconstruction_loss = loss_crossentropy(tf.ones_like(d_fake_logits), d_fake_logits)
@@ -226,7 +240,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             
             step(Csi_input, Pilot_input, PHY_input, Groundtruth_input, Label_input, training=True)
 
-            if training_step % 6000 == 0:
+            if training_step % 200 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
                     tf.summary.scalar('train/d_loss', G_loss.result(), training_step)
@@ -241,14 +255,14 @@ def NN_training(generator, discriminator, data_path, logdir):
         D_loss.reset_states()
         MSE_loss.reset_states()
         Accuracy.reset_states()
-        for csi, pilot,  phy_payload, label in test_data:
+        for csi, pilot,  phy_payload,groundtruth, label in test_data:
             # same as training 
             Csi_input = tf.squeeze(tf.repeat(csi,40,axis=0),axis = 1)
             Pilot_input = tf.squeeze(pilot,axis=0)
             PHY_input = tf.squeeze(tf.reshape(phy_payload,[40,48,1,2]),axis = 2)
             Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40,48,1,2]),axis = 2)
             Label_input = tf.squeeze(tf.reshape(label,[40,48,1,1]),axis = 2)
-            generated_out = step(Csi_input, Pilot_input,  PHY_input, training=False)
+            generated_out = step(Csi_input, Pilot_input, PHY_input, Groundtruth_input, Label_input, training=False)
             # print((generated_out.numpy())[0])
 
             with writer.as_default():
