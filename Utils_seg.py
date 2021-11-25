@@ -182,30 +182,30 @@ reduction=tf.keras.losses.Reduction.SUM)
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_out = generator(csi, pilot,phy_payload,training)
             
-            #d_real_logits = discriminator(groundtruth)
-            #d_fake_logits = discriminator(generated_out)
-            #d_loss_real = tf.reduce_mean(d_real_logits)
-            #d_loss_fake = tf.reduce_mean(d_fake_logits)
+            d_real_logits = discriminator(groundtruth)
+            d_fake_logits = discriminator(generated_out)
+            d_loss_real = tf.reduce_mean(d_real_logits)
+            d_loss_fake = tf.reduce_mean(d_fake_logits)
             #d_loss_real = loss_cosine(tf.ones_like(d_real_logits),d_real_logits)
             #d_loss_fake = loss_cosine(tf.zeros_like(d_fake_logits),d_fake_logits)
             #d_loss_real = loss_binentropy(tf.ones_like(d_real_logits),d_real_logits)
             #d_loss_fake = loss_binentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
-            #disc_loss = d_loss_real + d_loss_fake
-            disc_loss = tf.zeros([1, 1], tf.int32)
-            #reconstruction_loss = loss_cosine(groundtruth, generated_out)
-            reconstruction_loss = loss_mse(groundtruth, generated_out)
-            gen_loss = reconstruction_loss#d_loss_fake #
+            disc_loss = d_loss_real + d_loss_fake
+            #disc_loss = tf.zeros([1, 1], tf.int32)
+            reconstruction_loss = loss_cosine(groundtruth, generated_out)
+            #reconstruction_loss = loss_mse(groundtruth, generated_out)
+            gen_loss = reconstruction_loss + d_loss_fake #
             #gen_loss = d_fake_logits
 
 
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
-            #disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
+            disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
 
             generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_weights))
-            #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
-            #for w in discriminator.trainable_variables:
-                #w.assign(tf.clip_by_value(w, -0.04, 0.04))
+            discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
+            for w in discriminator.trainable_variables:
+                w.assign(tf.clip_by_value(w, -0.04, 0.04))
         #accuracy(gen_loss)
         G_loss(gen_loss)
         D_loss(disc_loss)
