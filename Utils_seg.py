@@ -119,11 +119,11 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         phy_payload_train = data['phy_payload_train'].astype(np.float32)
         groundtruth_train = data['groundtruth_train'].astype(np.float32)
         label_train = data['label_train'].astype(np.intc)
-        csi_train = csi_train[1000:1500,:,:,:]        
-        pilot_train = pilot_train[1000:1500,:,:,:] 
-        phy_payload_train = phy_payload_train[1000:1500,:,:,:] 
-        groundtruth_train = groundtruth_train[1000:1500,:,:,:]
-        label_train = label_train[1000:1500,:,:,:]
+        csi_train = csi_train[2000:2800,:,:,:]        
+        pilot_train = pilot_train[2000:2800,:,:,:] 
+        phy_payload_train = phy_payload_train[2000:2800,:,:,:] 
+        groundtruth_train = groundtruth_train[2000:2800,:,:,:]
+        label_train = label_train[2000:2800:,:,:]
         #print('PHY SHAPE = ',phy_payload_train.shape )
    
 
@@ -134,22 +134,24 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         groundtruth_test= data['groundtruth_test'].astype(np.float32)
         label_test = data['label_test'].astype(np.intc)
 
-        csi_test = csi_test[1000:1100,:,:,:]        
-        pilot_test = pilot_test[1000:1100,:,:,:] 
-        phy_payload_test = phy_payload_test[1000:1100,:,:,:] 
-        groundtruth_test = groundtruth_test[1000:1100,:,:,:]
-        label_test = label_test[1000:1100,:,:,:]
+        csi_test = csi_test[3000:3100,:,:,:]        
+        pilot_test = pilot_test[3000:3100,:,:,:] 
+        phy_payload_test = phy_payload_test[3000:3100,:,:,:] 
+        groundtruth_test = groundtruth_test[3000:3100,:,:,:]
+        label_test = label_test[3000:3100,:,:,:]
 
     train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train,label_train))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
     test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test, label_test))#.cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
     
-    
-    x1 = np.multiply(phy_payload_test, groundtruth_test)>0
+    print('Test_data',phy_payload_test.shape)
+    x1 = np.multiply(phy_payload_test, groundtruth_test)   
     x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])
-    print("baseline acc : ", np.mean(x1>0))
-
+    print('X1 shape = ',x1.shape)
+    for i in range(100):
+        print("baseline acc : ", np.mean(x1[i,:,:]>0))
+    
     return train_data, test_data
 
 def NN_training(generator, discriminator, data_path, logdir):
@@ -182,32 +184,32 @@ reduction=tf.keras.losses.Reduction.SUM)
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_out = generator(csi, pilot,phy_payload,training)
             
-            d_real_logits = discriminator(groundtruth)
-            #print(d_real_logits.shape)
-            d_fake_logits = discriminator(generated_out)
+            #d_real_logits = discriminator(groundtruth)
+            #d_fake_logits = discriminator(generated_out)
             #d_loss_real = tf.reduce_mean(d_real_logits)
             #d_loss_fake = tf.reduce_mean(d_fake_logits)
             #d_loss_real = loss_cosine(tf.ones_like(d_real_logits),d_real_logits)
             #d_loss_fake = loss_cosine(tf.zeros_like(d_fake_logits),d_fake_logits)
-            d_loss_real = loss_binentropy(tf.ones_like(d_real_logits),d_real_logits)
-            d_loss_fake = loss_binentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
-            disc_loss = d_loss_real + d_loss_fake
+            #d_loss_real = loss_binentropy(tf.ones_like(d_real_logits),d_real_logits)
+            #d_loss_fake = loss_binentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
+            #disc_loss = d_loss_real + d_loss_fake
+            disc_loss = tf.zeros([1, 1], tf.int32)
             reconstruction_loss = loss_cosine(groundtruth, generated_out)
             #reconstruction_loss = loss_crossentropy(tf.ones_like(d_fake_logits), d_fake_logits)
-            gen_loss = d_loss_fake + reconstruction_loss
+            gen_loss = reconstruction_loss#d_loss_fake #
             #gen_loss = d_fake_logits
 
 
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
-            disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
+            #disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
 
             generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_weights))
-            discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
-            for w in discriminator.trainable_variables:
-                w.assign(tf.clip_by_value(w, -0.04, 0.04))
+            #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
+            #for w in discriminator.trainable_variables:
+                #w.assign(tf.clip_by_value(w, -0.04, 0.04))
         #accuracy(gen_loss)
-        G_loss(- d_loss_fake)
+        G_loss(gen_loss)
         D_loss(disc_loss)
         MSE_loss(reconstruction_loss)
         x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
@@ -243,8 +245,8 @@ reduction=tf.keras.losses.Reduction.SUM)
             if training_step % 200 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
-                    tf.summary.scalar('train/d_loss', G_loss.result(), training_step)
-                    tf.summary.scalar('train/g_loss', D_loss.result(), training_step)
+                    tf.summary.scalar('train/d_loss', D_loss.result(), training_step)
+                    tf.summary.scalar('train/g_loss', G_loss.result(), training_step)
                     tf.summary.scalar('train/mse_loss', MSE_loss.result(), training_step)
                     tf.summary.scalar('train/acc', Accuracy.result(), training_step)
                     G_loss.reset_states()
@@ -266,8 +268,8 @@ reduction=tf.keras.losses.Reduction.SUM)
             # print((generated_out.numpy())[0])
 
             with writer.as_default():
-                tf.summary.scalar('test/d_loss', G_loss.result(), training_step)
-                tf.summary.scalar('test/g_loss', D_loss.result(), training_step)
+                tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
+                tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
                 tf.summary.scalar('test/mse_loss', MSE_loss.result(), training_step)
                 tf.summary.scalar('test/acc', Accuracy.result(), training_step)
                 if Accuracy.result() > best_validation_acc:
