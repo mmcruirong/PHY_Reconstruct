@@ -241,7 +241,7 @@ reduction=tf.keras.losses.Reduction.SUM)
 
             
             step(Csi_input, Pilot_input, PHY_input, Groundtruth_input, Label_input, training=True)
-
+            print('training_sep = ',training_step)
             if training_step % 200 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
