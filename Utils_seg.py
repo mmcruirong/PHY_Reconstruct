@@ -151,7 +151,7 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     #print('X1 shape = ',x1.shape)
     #for i in range(100):
         #print("baseline acc : ", np.mean(x1[i,:,:]>0))
-    
+    print("baseline acc : ", np.mean(x1>0))
     return train_data, test_data
 
 def NN_training(generator, discriminator, data_path, logdir):
@@ -165,10 +165,9 @@ def NN_training(generator, discriminator, data_path, logdir):
 
     loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True,
 reduction=tf.keras.losses.Reduction.SUM)
-    #loss_mse = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     loss_crossentropy = tf.keras.losses.CategoricalCrossentropy(reduction=tf.keras.losses.Reduction.SUM)
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
-    #loss_mse = tf.keras.losses.MeanSquaredError(axis=2)
+    loss_mse = tf.keras.losses.MeanSquaredError()
     MSE_loss = tf.metrics.Mean()
     Accuracy = tf.metrics.Mean()
     G_loss = tf.metrics.Mean()
@@ -193,8 +192,8 @@ reduction=tf.keras.losses.Reduction.SUM)
             #d_loss_fake = loss_binentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
             #disc_loss = d_loss_real + d_loss_fake
             disc_loss = tf.zeros([1, 1], tf.int32)
-            reconstruction_loss = loss_cosine(groundtruth, generated_out)
-            #reconstruction_loss = loss_crossentropy(tf.ones_like(d_fake_logits), d_fake_logits)
+            #reconstruction_loss = loss_cosine(groundtruth, generated_out)
+            reconstruction_loss = loss_mse(groundtruth, generated_out)
             gen_loss = reconstruction_loss#d_loss_fake #
             #gen_loss = d_fake_logits
 
@@ -222,11 +221,11 @@ reduction=tf.keras.losses.Reduction.SUM)
     print("start training...")
     for epoch in range(EPOCHS):
         for csi, pilot, phy_payload, groundtruth, label in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
-            # CSI (1,48,1,2) -> (40,48,1,2)
-            # PILOT (1,40,4,2) -> (40,40,4,2)
-            # PHY (1,1920,1,2) -> (40,48,1,2)
-            # Groundtruth(1,1920,1,2)-> (40,48,1,2)
-            # label (1,1920,1,1) -> (40,48,1,1)
+            # CSI (1,48,1,2) -> (40,48,2)
+            # PILOT (1,40,4,2) -> (40,4,2)
+            # PHY (1,1920,1,2) -> (40,48,2)
+            # Groundtruth(1,1920,1,2)-> (40,48,2)
+            # label (1,1920,1,1) -> (40,48,1)
             training_step += 1
             Csi_input = tf.squeeze(tf.repeat(csi,40,axis=0),axis = 1)
             Pilot_input = tf.squeeze(pilot,axis=0)
