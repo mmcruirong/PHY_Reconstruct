@@ -145,12 +145,12 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test, label_test))#.cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
     
-    print('Test_data',phy_payload_test.shape)
+    #print('Test_data',phy_payload_test.shape)
     x1 = np.multiply(phy_payload_test, groundtruth_test)   
     x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])
-    print('X1 shape = ',x1.shape)
-    for i in range(100):
-        print("baseline acc : ", np.mean(x1[i,:,:]>0))
+    #print('X1 shape = ',x1.shape)
+    #for i in range(100):
+        #print("baseline acc : ", np.mean(x1[i,:,:]>0))
     
     return train_data, test_data
 
@@ -173,14 +173,13 @@ reduction=tf.keras.losses.Reduction.SUM)
     Accuracy = tf.metrics.Mean()
     G_loss = tf.metrics.Mean()
     D_loss = tf.metrics.Mean()
-    
-        
+    batch_accuracy = 0
+    testing_accuracy = 0
     train_data, test_data = load_processed_dataset(data_path, 500, 1, 1)
     print("The dataset has been loaded!")
 
     @tf.function
     def step(csi, pilot, phy_payload, groundtruth, label, training):
-
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_out = generator(csi, pilot,phy_payload,training)
             
@@ -241,18 +240,21 @@ reduction=tf.keras.losses.Reduction.SUM)
 
             
             step(Csi_input, Pilot_input, PHY_input, Groundtruth_input, Label_input, training=True)
-            print('training_sep = ',training_step)
-            if training_step % 200 == 0:
+            batch_accuracy = Accuracy.result() + batch_accuracy
+            #print('batch_accuracy = ', batch_accuracy)
+
+            if training_step % 100 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
                     tf.summary.scalar('train/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('train/g_loss', G_loss.result(), training_step)
                     tf.summary.scalar('train/mse_loss', MSE_loss.result(), training_step)
-                    tf.summary.scalar('train/acc', Accuracy.result(), training_step)
+                    tf.summary.scalar('train/acc', tf.divide(batch_accuracy,100), training_step)
                     G_loss.reset_states()
                     D_loss.reset_states()
-                    MSE_loss.reset_states()
+                    MSE_loss.reset_states()                    
                     Accuracy.reset_states()
+                    batch_accuracy = 0
         G_loss.reset_states()
         D_loss.reset_states()
         MSE_loss.reset_states()
@@ -266,18 +268,20 @@ reduction=tf.keras.losses.Reduction.SUM)
             Label_input = tf.squeeze(tf.reshape(label,[40,48,1,1]),axis = 2)
             generated_out = step(Csi_input, Pilot_input, PHY_input, Groundtruth_input, Label_input, training=False)
             # print((generated_out.numpy())[0])
-
+            testing_accuracy = Accuracy.result() + testing_accuracy
+            #print('batch_accuracy = ', testing_accuracy)
             with writer.as_default():
                 tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
                 tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
                 tf.summary.scalar('test/mse_loss', MSE_loss.result(), training_step)
-                tf.summary.scalar('test/acc', Accuracy.result(), training_step)
-                if Accuracy.result() > best_validation_acc:
-                    best_validation_acc = Accuracy.result()
-                    generator.save_weights(os.path.join('saved_models', runid + '.tf'))
+                tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
+                #if batch_accuracy.result() > best_validation_acc:
+                    #best_validation_acc = batch_accuracy.result()
+                    #generator.save_weights(os.path.join('saved_models', runid + '.tf'))
                 G_loss.reset_states()
                 D_loss.reset_states()
                 MSE_loss.reset_states()
                 Accuracy.reset_states()
+                testing_accuracy = 0               
 if __name__ == "__main__":
     get_processed_dataset("dataset")
