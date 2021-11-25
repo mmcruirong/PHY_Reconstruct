@@ -217,6 +217,7 @@ reduction=tf.keras.losses.Reduction.SUM)
         return generated_out
     
     training_step = 0
+    testing_step = 0
     best_validation_acc = 0
     print("start training...")
     for epoch in range(EPOCHS):
@@ -243,13 +244,13 @@ reduction=tf.keras.losses.Reduction.SUM)
             batch_accuracy = Accuracy.result() + batch_accuracy
             #print('batch_accuracy = ', batch_accuracy)
 
-            if training_step % 100 == 0:
+            if training_step % 800 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
                     tf.summary.scalar('train/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('train/g_loss', G_loss.result(), training_step)
                     tf.summary.scalar('train/mse_loss', MSE_loss.result(), training_step)
-                    tf.summary.scalar('train/acc', tf.divide(batch_accuracy,100), training_step)
+                    tf.summary.scalar('train/acc', tf.divide(batch_accuracy,800), training_step)
                     G_loss.reset_states()
                     D_loss.reset_states()
                     MSE_loss.reset_states()                    
@@ -269,19 +270,21 @@ reduction=tf.keras.losses.Reduction.SUM)
             generated_out = step(Csi_input, Pilot_input, PHY_input, Groundtruth_input, Label_input, training=False)
             # print((generated_out.numpy())[0])
             testing_accuracy = Accuracy.result() + testing_accuracy
+            testing_step += 1
             #print('batch_accuracy = ', testing_accuracy)
-            with writer.as_default():
-                tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
-                tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
-                tf.summary.scalar('test/mse_loss', MSE_loss.result(), training_step)
-                tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
-                #if batch_accuracy.result() > best_validation_acc:
-                    #best_validation_acc = batch_accuracy.result()
-                    #generator.save_weights(os.path.join('saved_models', runid + '.tf'))
-                G_loss.reset_states()
-                D_loss.reset_states()
-                MSE_loss.reset_states()
-                Accuracy.reset_states()
-                testing_accuracy = 0               
+            if testing_step % 100 == 0:
+                with writer.as_default():
+                    tf.summary.scalar('test/d_loss', D_loss.result(), testing_step)
+                    tf.summary.scalar('test/g_loss', G_loss.result(), testing_step)
+                    tf.summary.scalar('test/mse_loss', MSE_loss.result(), testing_step)
+                    tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), testing_step)
+                    #if batch_accuracy.result() > best_validation_acc:
+                        #best_validation_acc = batch_accuracy.result()
+                        #generator.save_weights(os.path.join('saved_models', runid + '.tf'))
+                    G_loss.reset_states()
+                    D_loss.reset_states()
+                    MSE_loss.reset_states()
+                    Accuracy.reset_states()
+                    testing_accuracy = 0               
 if __name__ == "__main__":
     get_processed_dataset("dataset")
