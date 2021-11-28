@@ -194,8 +194,8 @@ reduction=tf.keras.losses.Reduction.SUM)
             #disc_loss = tf.zeros([1, 1], tf.int32)
             reconstruction_loss = loss_cosine(groundtruth, generated_out)
             #reconstruction_loss = loss_mse(groundtruth, generated_out)
-            #gen_loss = reconstruction_loss + d_loss_fake #
-            gen_loss = d_fake_logits
+            gen_loss = reconstruction_loss + d_loss_fake #
+            #gen_loss = d_fake_logits
 
 
         if training:
