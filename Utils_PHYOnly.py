@@ -22,8 +22,8 @@ def data_preprocessing_for_each_payload(data):
     label1 = []
     #gt_out = []
     groundtruth =[]    
-    CSI = data[1] # (5000, 1)
-    Pilots = data[4] 
+    CSI = data[0] # (5000, 1)
+    Pilots = data[1] 
     Phypayload = data[5] # Constellation -> Rx after EQ RAW -> Raw signal
     Groundtruth = data[4]
     Label = data[3]
@@ -38,15 +38,15 @@ def data_preprocessing_for_each_payload(data):
     for i_sample in range(num_samples):
         #csi_out.append(np.concatenate((np.real(CSI[i_sample][0]).reshape(64, 1), np.imag(CSI[i_sample][0]).reshape(64, 1)), axis=-1))
         #pilot_out.append(np.concatenate((np.real(Pilots[i_sample][0]).reshape(40,4,1), np.imag(Pilots[i_sample][0]).reshape(40,4, 1)), axis=-1))
-        #csi_angle = np.real(CSI[i_sample][0]).reshape(40, 48,1, order='F')
-        #csi_amp = np.imag(CSI[i_sample][0]).reshape(40, 48,1, order='F')   
-        #csi_out.append(np.concatenate((csi_amp,csi_angle),axis = 2))
+        csi_angle = np.real(CSI[i_sample][0]).reshape(1, 48,1)
+        csi_amp = np.imag(CSI[i_sample][0]).reshape(1, 48,1)   
+        csi_out.append(np.concatenate((csi_amp,csi_angle),axis = 2))
             
 
         #csi_out = csi_out.reshape(1,48,2)
-        #pilot_angle = np.real(Pilots[i_sample][0]).reshape(40, 48,1, order='F')
-        #pilot_amp = np.imag(Pilots[i_sample][0]).reshape(40, 48,1, order='F')
-        #pilot_out.append(np.concatenate((pilot_amp,pilot_angle),axis = 2))       
+        pilot_angle = np.real(Pilots[i_sample][0]).reshape(4, 40,1)
+        pilot_amp = np.imag(Pilots[i_sample][0]).reshape(4, 40,1)
+        pilot_out.append(np.concatenate((pilot_amp,pilot_angle),axis = 2))       
         #pilot_out.append([pilot_amp,pilot_angle])  
        
         phy_payload_angle = np.real(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
@@ -62,23 +62,23 @@ def data_preprocessing_for_each_payload(data):
         label1.append(Label1[i_sample][0].reshape(40,48,1, order='F'))
 
         #groundtruth.append([groundtruth_amp,groundtruth_angle]) 
-    #csi_out = np.array(csi_out)# (2, 48, 1)
-    #pilot_out = np.array(pilot_out) # (2, 40, 4)
+    csi_out = np.array(csi_out)# (2, 48, 1)
+    pilot_out = np.array(pilot_out) # (2, 40, 4)
     phy_payload = np.array(phy_payload) # (2, 40, 48)
     groundtruth = np.array(groundtruth) # (2, 40, 48)
     label = np.array(label)
     label1 = np.array(label1)
-    #print('CSI_SHAPE=',csi_out.shape)
-    #print('pilot_SHAPE=',pilot_out.shape)
+    print('CSI_SHAPE=',csi_out.shape)
+    print('pilot_SHAPE=',pilot_out.shape)
     print('phy_SHAPE=',phy_payload.shape)
     print('ground_SHAPE=',groundtruth.shape)
     print('label_SHAPE=',label.shape)
-    return phy_payload, groundtruth, label, label1
+    return phy_payload, groundtruth, label, label1,csi_out,pilot_out
 
 def get_processed_dataset(data_path, split=4/5):
     file_list = os.listdir(data_path)
-    #CSI = np.empty((0, 40, 48, 2))
-    #PILOT = np.empty((0, 40, 48, 2))
+    CSI = np.empty((0, 1, 48, 2))
+    PILOT = np.empty((0, 4, 40, 2))
     PHY_PAYLOAD = np.empty((0, 40, 48, 2))
     GROUNDTRUTH = np.empty((0, 40, 48, 2))
     LABEL = np.empty((0, 40, 48, 1))
@@ -88,9 +88,9 @@ def get_processed_dataset(data_path, split=4/5):
     # print(file_list)
     for file in file_list:
        data_chunk = data_loader_for_each_payload(data_path + '/' + file)
-       phy_payload, groudtruth, Tx_label, Tx_label1 = data_preprocessing_for_each_payload(data_chunk)
-       #CSI = np.concatenate([CSI, csi_out], axis=0)
-       #PILOT = np.concatenate([PILOT, pilot_out], axis=0)
+       phy_payload, groudtruth, Tx_label, Tx_label1,csi_out,pilot_out = data_preprocessing_for_each_payload(data_chunk)
+       CSI = np.concatenate([CSI, csi_out], axis=0)
+       PILOT = np.concatenate([PILOT, pilot_out], axis=0)
        PHY_PAYLOAD = np.concatenate([PHY_PAYLOAD, phy_payload], axis=0)
        GROUNDTRUTH = np.concatenate([GROUNDTRUTH, groudtruth], axis=0)
        LABEL = np.concatenate([LABEL, Tx_label], axis=0)
@@ -103,20 +103,17 @@ def get_processed_dataset(data_path, split=4/5):
     train_indices = rand_indices[:int(split*num_samples)]
     test_indices = rand_indices[int(split*num_samples):]
     
-    #train_indices = np.random.permutation(range(5000, num_samples))
-    
-    #test_indices = list(range(0, 5000))
 
-    np.savez_compressed("PHY_dataset_randomv1_" + str(split), 
-                        #csi_train=CSI[train_indices, :, :, :],
-                        #pilot_train=PILOT[train_indices, :, :, :],
+    np.savez_compressed("PHY_dataset_QPSK_" + str(split), 
+                        csi_train=CSI[train_indices, :, :, :],
+                        pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
                         groundtruth_train=GROUNDTRUTH[train_indices, :, :, :],
                         label_train=LABEL[train_indices, :, :, :],
                         label1_train=LABEL1[train_indices, :, :, :],
 
-                        #csi_test=CSI[test_indices, :, :, :],
-                        #pilot_test=PILOT[test_indices, :, :, :],
+                        csi_test=CSI[test_indices, :, :, :],
+                        pilot_test=PILOT[test_indices, :, :, :],
                         phy_payload_test=PHY_PAYLOAD[test_indices, :, :, :],
                         groundtruth_test=GROUNDTRUTH[test_indices, :, :, :],
                         label_test=LABEL[test_indices, :, :, :],
@@ -170,7 +167,7 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     return train_data, test_data
 
 def NN_training(generator, discriminator, data_path, logdir):
-    EPOCHS = 400
+    EPOCHS = 1600
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
     
@@ -197,7 +194,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     def step(phy_payload, groundtruth, label,label1, training):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             #generated_out = generator(phy_payload, training)
-            generated_out = generator(groundtruth)
+            generated_out = generator(phy_payload)
 
             #print(generated_out.shape)
             #d_real_logits = discriminator(groundtruth)            
