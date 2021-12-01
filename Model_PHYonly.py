@@ -1,5 +1,6 @@
 from numpy.core.numeric import False_, outer
 import tensorflow as tf
+import numpy as np
 
 
 def feature_extractor_csi():
@@ -19,7 +20,7 @@ def feature_extractor_csi():
     
 
 def feature_extractor_pilot():
-    inp = tf.keras.Input(shape=(4, 2))
+    inp = tf.keras.Input(shape=(48, 2))
     out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -58,98 +59,156 @@ def corrector():
     return tf.keras.Model(inputs=[f_csi, f_pilot, f_phy], outputs=out)
 
 def generator():
-    def stochastic_block(net, N, d):
-        net = tf.keras.layers.Dense(N * d)(net)
-        net = tf.concat([net[:, i*d:(i+1)*d] +
-                        (1e-6 + tf.nn.softplus(net[:, (i+1)*d:(i+2)*d])) *
-                        tf.random.normal(tf.shape(net[:, i*d:(i+1)*d]), 0, 1, dtype=tf.float32)
-                        for i in range(N) if not (i % (2*d))], axis=1)
-        return net
-
-    def stochastic_block_v1(net, N, d):
-        net = tf.keras.layers.Dense(N * d)(net)
-        net = tf.concat([net[:, i*d:(i+1)*d] +
-                        (1e-6 + tf.nn.softplus(net[:, (i+1)*d:(i+2)*d])) *
-                        tf.random.uniform(tf.shape(net[:, i*d:(i+1)*d]), 0, 1, dtype=tf.float32)
-                        for i in range(N) if not (i % (2*d))], axis=1)
-        return net  
-    inp = tf.keras.Input(shape=(30, 1))#, activation='leaky_relu'
-    out = tf.keras.layers.Conv1D(filters=8, kernel_size=3, strides=2, padding='same', use_bias=False)(inp)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv1D(filters=32, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
-    #out = tf.keras.layers.GlobalAveragePooling1D(keepdims=True)(out)   # (None, 2, 5, 6)
-    out = tf.keras.layers.Flatten()(out) # (None, 60)
-    out = stochastic_block_v1(out, 12, 2) # (None, 60)
-    out = tf.keras.layers.Reshape((6,1))(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=8, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=16, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=32, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)    
-    out = tf.keras.layers.Conv1D(filters=2, kernel_size = 3, strides=1, padding='same', use_bias=True)(out)
+    inp = tf.keras.Input(shape=(40, 48,2))#, activation='leaky_relu'
+    out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    #out = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(out)   # (None, 2, 5, 6)
+    out = tf.keras.layers.Conv2DTranspose(filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2DTranspose(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2DTranspose(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2DTranspose(filters=8, kernel_size = (3,3), strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size = (3,3), strides=1, padding='same', use_bias=False)(out)
+    #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)    
+    #out = tf.keras.layers.Conv2D(filters=2, kernel_size = (3,3), strides=1, padding='same', use_bias=True)(out)
+    #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.Reshape((1920,1,2))(out)
-    out = out + inp
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv1D(filters=2, kernel_size=3, strides=1, padding='same', use_bias=True)(out)
+    #out = out +inp
+    
+    #out = tf.keras.layers.Conv1D(filters=2, kernel_size=3, strides=1, padding='same', use_bias=True)(out)
+    
     return tf.keras.Model(inputs=inp, outputs=out)
 
 
 
 def discriminator():   
-    gen_out = tf.keras.Input(shape=(30, 4))
-    out = tf.keras.layers.Conv1D(filters=8, kernel_size=3, strides=1, padding='same', use_bias=False)(gen_out)
+    gen_out = tf.keras.Input(shape=(40, 48,2))
+    out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(gen_out)
     out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.ReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv2D(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.ReLU(alpha=0.1)(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(out)
-    out = tf.keras.layers.Conv1D(filters=32, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.ReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv1D(filters=64, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv2D(filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
 
-    out = tf.keras.layers.Dense(4)(out)
+    out = tf.keras.layers.Dense(40)(out)
     return tf.keras.Model(inputs=gen_out, outputs=out)
+
+
+
+def PHY_Reconstruction_AE():
+    phy_lstm_1 = tf.keras.layers.LSTMCell(32, name='lstm1') # (40, 48)
+    phy_lstm_2 = tf.keras.layers.LSTMCell(32) # (40, 48)
+    correction = tf.keras.layers.LSTMCell(4)
+    stackcell = [phy_lstm_1, correction]
+    LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
+
+    Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_sequences=True)
+    inp = tf.keras.Input((12,2))
+    out = Reconstructioncell(inp)
+
+    return tf.keras.Model(inputs=inp, outputs=out)
+
+class CVAE(tf.keras.Model):
+
+    def __init__(self):
+        super(CVAE, self).__init__()
+        self.encoder = tf.keras.Sequential(
+            [
+                tf.keras.layers.InputLayer(input_shape=(40, 48, 2)),
+                tf.keras.layers.Conv2D(
+                    filters=32, kernel_size=3, strides=(2, 2), activation='relu'),
+                tf.keras.layers.Conv2D(
+                    filters=64, kernel_size=3, strides=(2, 2), activation='relu'),
+                tf.keras.layers.Conv2D(
+                    filters=64, kernel_size=3, strides=(2, 2), activation='relu'),
+                tf.keras.layers.Flatten(),
+                # No activation
+                tf.keras.layers.Dense(10 + 10),
+            ]
+        )
+
+        self.decoder = tf.keras.Sequential(
+            [
+                tf.keras.layers.InputLayer(input_shape=(10,)),
+                tf.keras.layers.Dense(units=5*6*32, activation=tf.nn.relu),
+                tf.keras.layers.Reshape(target_shape=(5, 6, 32)),
+                tf.keras.layers.Conv2DTranspose(
+                    filters=64, kernel_size=3, strides=2, padding='same',
+                    activation='relu'),
+                tf.keras.layers.Conv2DTranspose(
+                    filters=32, kernel_size=3, strides=2, padding='same',
+                    activation='relu'),
+                tf.keras.layers.Conv2DTranspose(
+                    filters=16, kernel_size=3, strides=2, padding='same',
+                    activation='relu'),
+                tf.keras.layers.Conv2DTranspose(
+                    filters=4, kernel_size=3, strides=1, padding='same'),
+            ]
+        )
+
+    @tf.function
+    def sample(self, eps=None):
+        if eps is None:
+            eps = tf.random.normal(shape=(100, self.latent_dim))
+        return self.decode(eps, apply_sigmoid=True)
+
+    def encode(self, x):
+        mean, logvar = tf.split(self.encoder(x), num_or_size_splits=2, axis=1)
+        return mean, logvar
+
+    def reparameterize(self, mean, logvar):
+        eps = tf.random.normal(shape=mean.shape)
+        return eps * tf.exp(logvar * .5) + mean
+
+    def decode(self, z, apply_sigmoid=False):
+        logits = self.decoder(z)
+        if apply_sigmoid:
+            probs = tf.sigmoid(logits)
+            return probs
+        return logits
+    def log_normal_pdf(sample, mean, logvar, raxis=1):
+        log2pi = tf.math.log(2. * np.pi)
+        return tf.reduce_sum(
+            -.5 * ((sample - mean) ** 2. * tf.exp(-logvar) + logvar + log2pi),
+            axis=raxis)
+    
+    def call(self, PHY_Payload):
+        mean, logvar = self.encode(PHY_Payload)
+        z = self.reparameterize(mean, logvar)
+        x_logit = self.decode(z,apply_sigmoid=True)
+        #cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
+        #logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+        #logpz = log_normal_pdf(z, 0., 0.)
+        #logqz_x = log_normal_pdf(z, mean, logvar)
+        return x_logit
 
 class PHY_Reconstruction_Generator(tf.keras.Model):
     def __init__(self):
-        super(PHY_Reconstruction_Generator, self).__init__()
-        self.csi_branch = feature_extractor_csi()
-        self.pilot_branch = feature_extractor_pilot()        
+        super(PHY_Reconstruction_Generator, self).__init__()          
         self.phy_generator = generator()
-        self.phy_lstm = tf.keras.layers.LSTM(1, return_sequences=True) # (40, 48)
-        self.concat_layer = tf.keras.layers.Concatenate(axis=-1)
-        self.fusion_layer_1 = tf.keras.layers.Dense(48, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
-        self.fusion_layer_2 = tf.keras.layers.Dense(48, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
+        self.phy_lstm = tf.keras.layers.LSTM(1, return_sequences=True) # (40, 48)    
         #self.activation = tf.keras.layers.Activation('sigmoid')
-        self.DeConv_net_2 = tf.keras.Sequential([
-            tf.keras.layers.Dense(units=48, activation=tf.nn.leaky_relu),
-            tf.keras.layers.Reshape(target_shape=(48, 1)),            
-            tf.keras.layers.Conv1D(
-                filters=64, kernel_size=3, strides=1, padding='same', use_bias=False,
-                activation=tf.nn.leaky_relu),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv1D(
-                filters=32, kernel_size=3, strides=1, padding='same', use_bias=False,
-                activation=tf.nn.leaky_relu),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Conv1D(
-                filters=16, kernel_size=3, strides=1, padding='same', use_bias=False,
-                activation=tf.nn.leaky_relu),
-            tf.keras.layers.BatchNormalization(),
-            # No activation
-            tf.keras.layers.Conv1D(
-                filters=2, kernel_size=3, strides=1, padding='same')]
-            #tf.keras.layers.Reshape(target_shape=(1920, 1, 2))]
-            )  
+      
         #self.PHY_payload_branch = discriminator()
     def call(self, PHY_Payload, training=False):#, CSI, Pilot, Freq, 
-        #csi_features = self.csi_branch(CSI, training=training)
-        #pilot_features = self.pilot_branch(Pilot, training=training)
+       
         #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
         '''PHY_Payload_Real = PHY_Payload[:,:,:,0]
         PHY_Payload_IMAG = PHY_Payload[:,:,:,1]
@@ -162,18 +221,11 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         joint_features = self.fusion_layer_1(joint_features)
         joint_features = self.fusion_layer_2(joint_features)
         estimation_correction = self.DeConv_net_2(joint_features)        
-        out = phy_payload_generator * estimation_correction +  PHY_Payload  ''' 
-        #joint_features = self.concat_layer([csi_features, pilot_features])
-        #joint_features = self.fusion_layer_1(joint_features)
-        #joint_features = self.fusion_layer_2(joint_features)
-        #estimation_correction = self.DeConv_net_2(joint_features) 
-        #PHY_Corrected = PHY_Payload * estimation_correction
-        #PHY_Payload_Real = PHY_Corrected[:,:,0]
-        #PHY_Payload_IMAG = PHY_Corrected[:,:,1]
-        #whole_seq_output_real = self.phy_lstm(PHY_Payload_Real)
-        LSTM_PHY_Payload = self.phy_lstm(PHY_Payload)
+        out = phy_payload_generator * estimation_correction +  PHY_Payload'''  
+        
+        #LSTM_PHY_Payload = self.phy_lstm(PHY_Payload, training=training)
         #LSTM_PHY_Payload = tf.stack([whole_seq_output_real,whole_seq_output_imag],2)
-        out = self.phy_generator(LSTM_PHY_Payload, training=training)   +  PHY_Payload       
+        out = self.phy_generator(PHY_Payload, training=training)    
         #LSTM_PHY_Payload    
         #out = self.phy_generator(out, training=training)     
         #out =  self.activation(out)
@@ -190,9 +242,9 @@ class PHY_Reconstruction_discriminator(tf.keras.Model):
         #PHY_Payload_Real = PHY_Payload
         #PHY_Payload_IMAG = PHY_Payload[:,:,1]
         #whole_seq_output_real = self.phy_lstm(PHY_Payload_Real)
-        LSTM_PHY_Payload = self.phy_lstm(PHY_Payload)
+        #LSTM_PHY_Payload = self.phy_lstm(PHY_Payload)
         #LSTM_PHY_Payload = tf.stack([whole_seq_output_real,whole_seq_output_imag],2) #LSTM_PHY_Payload
-        phy_payload_discriminator = self.phy_discriminator(LSTM_PHY_Payload, training=training)     
+        phy_payload_discriminator = self.phy_discriminator(PHY_Payload, training=training)     
         return phy_payload_discriminator
 """               
 class PHY_Reconstruction_Net_(tf.keras.Model):
@@ -223,7 +275,7 @@ class PHY_Reconstruction_Net_(tf.keras.Model):
             tf.keras.layers.Reshape(target_shape=(5, 6, 3)),
             tf.keras.layers.Conv2DTranspose(
                 filters=128, kernel_size=3, strideground_truths=2, padding='same', use_bias=False,
-                activation=tf.nn.relu),
+                activation=tf.nn.relu),100
             tf.keras.layers.BatchNormalization(),#PHY_features
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Conv2DTranspose(
