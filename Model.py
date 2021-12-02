@@ -149,13 +149,13 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
     def call(self, CSI, Pilot, PHY_Payload, training=False):#, CSI, Pilot, Freq, 
         csi_features = self.csi_branch(CSI, training=training)
         pilot_features = self.pilot_branch(Pilot, training=training)
-        #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
+        PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
         phy_payload_generator = self.phy_generator(PHY_Payload, training=training)        
         joint_features = self.concat_layer([csi_features, pilot_features])
         joint_features = self.fusion_layer_1(joint_features)
         joint_features = self.fusion_layer_2(joint_features)
         estimation_correction = self.DeConv_net_2(joint_features)
-        out = phy_payload_generator * estimation_correction +  PHY_Payload
+        out = phy_payload_generator * estimation_correction
         #out =  self.activation(out)
         #out = self_correction    * estimation_correction  
         return out

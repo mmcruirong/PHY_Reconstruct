@@ -44,8 +44,8 @@ def data_preprocessing_for_each_payload(data):
             
 
         #csi_out = csi_out.reshape(1,48,2)
-        pilot_angle = np.real(Pilots[i_sample][0]).reshape(4, 40,1)
-        pilot_amp = np.imag(Pilots[i_sample][0]).reshape(4, 40,1)
+        pilot_angle = np.real(Pilots[i_sample][0]).reshape(40, 4,1)
+        pilot_amp = np.imag(Pilots[i_sample][0]).reshape(40, 4,1)
         pilot_out.append(np.concatenate((pilot_amp,pilot_angle),axis = 2))       
         #pilot_out.append([pilot_amp,pilot_angle])  
        
@@ -78,7 +78,7 @@ def data_preprocessing_for_each_payload(data):
 def get_processed_dataset(data_path, split=4/5):
     file_list = os.listdir(data_path)
     CSI = np.empty((0, 1, 48, 2))
-    PILOT = np.empty((0, 4, 40, 2))
+    PILOT = np.empty((0, 40, 4, 2))
     PHY_PAYLOAD = np.empty((0, 40, 48, 2))
     GROUNDTRUTH = np.empty((0, 40, 48, 2))
     LABEL = np.empty((0, 40, 48, 1))
@@ -123,8 +123,8 @@ def get_processed_dataset(data_path, split=4/5):
 
 def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_batch_size):
     with np.load(path) as data:
-        #csi_train = data['csi_train'].astype(np.float32)
-        #pilot_train = data['pilot_train'].astype(np.float32)        
+        csi_train = data['csi_train'].astype(np.float32)
+        pilot_train = data['pilot_train'].astype(np.float32)        
         phy_payload_train = data['phy_payload_train'].astype(np.float32)
         groundtruth_train = data['groundtruth_train'].astype(np.float32)
         label_train = data['label_train'].astype(np.float32)
@@ -132,29 +132,34 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
 
         #csi_train = csi_train[2000:6000,:,:,:]        
         #pilot_train = pilot_train[2000:6000,:,:,:] 
-        #phy_payload_train = phy_payload_train[2000:6000,:,:,:] 
-        #groundtruth_train = groundtruth_train[2000:6000,:,:,:]
-        #label_train = label_train[2000:6000,:,:,:]
-        #print('PHY SHAPE = ',phy_payload_train.shape )
+        #phy_payload_train = phy_payload_train[2000:32000,:,:,:] 
+        #groundtruth_train = groundtruth_train[2000:32000,:,:,:]
+        #label_train = label_train[2000:32000,:,:,:]
+        #label1_train = label1_train[2000:32000,:,:,:]
+        #mixed_train = np.concatenate([phy_payload_train[0:35000,:,:,:],groundtruth_train[35000:40000,:,:,:]], axis=0)
+        #label1_mixed_train = np.concatenate([label1_train[0:35000,:,:,:],label1_train[35000:40000,:,:,:]], axis=0)
+
+        #print('PHY SHAPE = ',mixed_train.shape)
    
 
 
-        #csi_test = data['csi_test'].astype(np.float32)
-        #pilot_test = data['pilot_test'].astype(np.float32)       
+        csi_test = data['csi_test'].astype(np.float32)
+        pilot_test = data['pilot_test'].astype(np.float32)       
         phy_payload_test = data['phy_payload_test'].astype(np.float32)
         groundtruth_test= data['groundtruth_test'].astype(np.float32)
         label_test = data['label_test'].astype(np.float32)
         label1_test = data['label1_test'].astype(np.float32)
 
-        #csi_test = csi_test[3100:3800,:,:,:]        
-        #pilot_test = pilot_test[3100:3800,:,:,:] 
-        #phy_payload_test = phy_payload_test[3100:3800,:,:,:] 
-        #groundtruth_test = groundtruth_test[3100:3800,:,:,:]
-        #label_test = label_test[3100:3800,:,:,:]
+        csi_test = csi_test[5000:5100,:,:,:]        
+        pilot_test = pilot_test[5000:5100,:,:,:] 
+        phy_payload_test = phy_payload_test[5000:5100,:,:,:] 
+        groundtruth_test = groundtruth_test[5000:5100,:,:,:]
+        label_test = label_test[5000:5100,:,:,:]
+        label1_test = label1_test[5000:5100,:,:,:]
 
-    train_data = tf.data.Dataset.from_tensor_slices((phy_payload_train, groundtruth_train,label_train,label1_train))#.cache().prefetch(tf.data.AUTOTUNE)
+    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,phy_payload_train, groundtruth_train,label_train,label1_train))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
-    test_data = tf.data.Dataset.from_tensor_slices((phy_payload_test, groundtruth_test, label_test,label1_test))#.cache().prefetch(tf.data.AUTOTUNE)
+    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,phy_payload_test, groundtruth_test, label_test,label1_test))#.cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
     
     #print('Test_data',phy_payload_test.shape)
@@ -176,27 +181,29 @@ def NN_training(generator, discriminator, data_path, logdir):
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
     loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-    loss_crossentropy = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    loss_crossentropy = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
-    loss_mse = tf.keras.losses.MeanSquaredError()
+    loss_mse = tf.keras.losses.MeanAbsoluteError()
     MSE_loss = tf.metrics.Mean()
-    accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
+    accuracy = tf.metrics.Mean()#tf.keras.metrics.SparseCategoricalAccuracy()#tf.keras.metrics.MeanAbsoluteError()
     G_loss = tf.metrics.Mean()
     D_loss = tf.metrics.Mean()
     batch_accuracy = 0
-    train_data, test_data = load_processed_dataset(data_path, 500, 512, 512)
+    testing_accuracy = 0
+    train_data, test_data = load_processed_dataset(data_path, 500, 100, 100)
     print("The dataset has been loaded!")
     
        
 
 
     @tf.function
-    def step(phy_payload, groundtruth, label,label1, training):
+    def step(csi, pilot,phy_payload, groundtruth, label,label1, training):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             #generated_out = generator(phy_payload, training)
-            generated_out = generator(phy_payload)
+            generated_out = generator([csi, pilot,phy_payload,groundtruth])
 
-            #print(generated_out.shape)
+            print(generated_out.shape)
+            print(label1.shape)
             #d_real_logits = discriminator(groundtruth)            
             #d_fake_logits = discriminator(generated_out)
             #d_loss_real = loss_crossentropy(label,d_real_logits)
@@ -208,9 +215,9 @@ def NN_training(generator, discriminator, data_path, logdir):
 
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)    
-            gen_loss = loss_crossentropy(label,generated_out) #+ reconstruction_loss
-
-
+            #gen_loss = loss_crossentropy(tf.reshape(label1,[16000*12,1]),tf.reshape(generated_out,[16000*12,4])) #+ reconstruction_loss
+            gen_loss = loss_crossentropy(label1,generated_out)
+            #gen_loss = loss_cosine(groundtruth,generated_out)
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
             #disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
@@ -219,14 +226,16 @@ def NN_training(generator, discriminator, data_path, logdir):
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        accuracy(label,generated_out)
+        accuracy(tf.reshape(label1,[16000*12,1]),tf.reshape(generated_out,[16000*12,4]))
+        #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
         #D_loss(disc_loss)
         #x1 = tf.math.reduce_sum(tf.cast(tf.math.not_equal(tf.math.round(tf.cast(generated_out, tf.float32)), tf.cast(label, tf.float32)), tf.float32))
         #tf.print(x1)
         #accuracy(tf.reduce_mean(tf.math.divide(tf.cast(x1, tf.float32),1006560)))
         #x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
-        #accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 1]) > 0, tf.float32)))
+        #accuracy(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 1]) > 0, tf.float32))
+        #print(accuracy.result().shape)
         return generated_out
     
     training_step = 0
@@ -234,18 +243,19 @@ def NN_training(generator, discriminator, data_path, logdir):
     #best_validation_acc = 0
     print("start training...")
     for epoch in range(EPOCHS):
-        for phy_payload, groundtruth, label,label1 in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
+        for csi, pilot,phy_payload, groundtruth, label,label1 in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
             # CSI (1,48,1,2) -> (40,48,2)
             # PILOT (1,40,4,2) -> (40,4,2)
             # PHY (1,1920,1,2) -> (40,48,2)
             # Groundtruth(1,1920,1,2)-> (40,48,2)
             # label (1,1920,1,1) -> (40,48,1)
             training_step += 1
-            #Csi_input = tf.squeeze(tf.reshape(csi,[40,48,1,2]),axis = 2)
-            #Pilot_input = tf.squeeze(tf.reshape(pilot,[40,48,1,2]),axis = 2)
-            #PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*4,12,1,2]),axis = 2)
-            #Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*4,12,1,2]),axis = 2)
-            #Label_input = tf.squeeze(tf.reshape(label,[40*4,12,1,1]),axis = 2)
+            Csi_input = tf.squeeze(tf.reshape(csi,[4*100,12,1,2]),axis = 2)
+            Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*4*100,12,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*4*100,12,1,2]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*4*100,12,1,1]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40*4*100,12,1,1]),axis = 2)
             #print('CSI SHAPE = ',Csi_input.shape)
             #print('Pilot SHAPE = ',Pilot_input.shape)
             #print('PHY SHAPE = ',PHY_input.shape)
@@ -253,48 +263,52 @@ def NN_training(generator, discriminator, data_path, logdir):
             #print('label SHAPE = ',Label_input.shape)
 
             
-            step(phy_payload,groundtruth, label, label1, training=True)
-            #batch_accuracy = Accuracy.result() + batch_accuracy
+            step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input, Label1_input, training=True)
+            batch_accuracy = accuracy.result() + batch_accuracy
             #print('batch_accuracy = ', batch_accuracy)
 
-            if training_step % 200 == 0:
+            if training_step % 100 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
-                    tf.summary.scalar('train/acc', accuracy.result(), training_step)
-                    tf.summary.scalar('train/g_loss', G_loss.result(), training_step)                  
-                    #tf.summary.scalar('train/d_loss', D_loss.result(), training_step)
-                    G_loss.reset_states()
-                    #D_loss.reset_states()               
+                    tf.summary.scalar('train/g_loss', G_loss.result(), training_step)
+                    tf.summary.scalar('train/acc', tf.divide(batch_accuracy,100), training_step)
+                    G_loss.reset_states()                    
                     accuracy.reset_states()
-                    #batch_accuracy = 0
-        #D_loss.reset_states() 
+                    batch_accuracy = 0         
+                    #tf.print(tf.divide(batch_accuracy,100))
         G_loss.reset_states()
         accuracy.reset_states()
-        for phy_payload,groundtruth, label, label1 in test_data:
+        
+        for csi, pilot,phy_payload,groundtruth, label, label1 in test_data:
             # same as training 
-            #Csi_input = tf.squeeze(tf.reshape(csi,[40,48,1,2]),axis = 2)
-            #Pilot_input = tf.squeeze(tf.reshape(pilot,[40,48,1,2]),axis = 2)
-            #PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*4,12,1,2]),axis = 2)
-            #Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*4,12,1,2]),axis = 2)
-            #Label_input = tf.squeeze(tf.reshape(label,[40*4,12,1,1]),axis = 2)
-            generated_out = step(phy_payload,groundtruth, label,label1, training=False)
-            # print((generated_out.numpy())[0])
-            #testing_accuracy = Accuracy.result() + testing_accuracy
-            # testing_step += 1
-            #print('batch_accuracy = ', testing_accuracy)
-            
-            with writer.as_default():
-                #tf.summary.scalar('test/d_loss', D_loss.result(), testing_step)
-                tf.summary.scalar('test/acc', accuracy.result(), training_step)
-                tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
-                #tf.summary.scalar('train/d_loss', D_loss.result(), training_step)
+            Csi_input = tf.squeeze(tf.reshape(csi,[4*100,12,1,2]),axis = 2)
+            Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*4*100,12,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*4*100,12,1,2]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40*4*100,12,1,1]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*4*100,12,1,1]),axis = 2)
 
-                #if batch_accuracy.result() > best_validation_acc:
-                    #best_validation_acc = batch_accuracy.result()
-                    #generator.save_weights(os.path.join('saved_models', runid + '.tf'))
-                G_loss.reset_states()                                     
-                accuracy.reset_states()
-                #D_loss.reset_states() 
-                 
+            testing_step += 1
+            generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input, training=False)
+            # print((generated_out.numpy())[0])
+            testing_accuracy = accuracy.result() + testing_accuracy
+            
+            #print('batch_accuracy = ', testing_accuracy)
+        #print('testing_step = ', testing_step)
+            if testing_step % 1 == 0:
+                with writer.as_default():
+                #tf.summary.scalar('test/d_loss', D_loss.result(), testing_step)
+                    tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
+                    tf.summary.scalar('test/acc', tf.divide(testing_accuracy,1), training_step)
+                    tf.summary.scalar('train/d_loss',  tf.math.reduce_max(testing_accuracy), training_step)
+
+                    #if batch_accuracy.result() > best_validation_acc:
+                        #best_validation_acc = batch_accuracy.result()
+                        #generator.save_weights(os.path.join('saved_models', runid + '.tf'))
+                    G_loss.reset_states()                                     
+                    accuracy.reset_states()
+                    tf.print(tf.math.reduce_max(testing_accuracy))
+                    testing_accuracy = 0  
+
 if __name__ == "__main__":
     get_processed_dataset("dataset")
