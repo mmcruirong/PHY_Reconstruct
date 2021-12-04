@@ -108,21 +108,25 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         pilot_train = data['pilot_train'].astype(np.float32)        
         phy_payload_train = data['phy_payload_train'].astype(np.float32)
         groundtruth_train = data['groundtruth_train'].astype(np.float32)
+        label_train = data['label_train'].astype(np.float32)
+        label1_train = data['label1_train'].astype(np.float32)
 
         csi_test = data['csi_test'].astype(np.float32)
         pilot_test = data['pilot_test'].astype(np.float32)       
         phy_payload_test = data['phy_payload_test'].astype(np.float32)
         groundtruth_test= data['groundtruth_test'].astype(np.float32)
+        label_test = data['label_test'].astype(np.float32)
+        label1_test = data['label1_test'].astype(np.float32)
 
-    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train)).cache().prefetch(tf.data.AUTOTUNE)
+    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,  phy_payload_train, groundtruth_train,label_train,label1_train)).cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
-    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test)).cache().prefetch(tf.data.AUTOTUNE)
+    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,  phy_payload_test, groundtruth_test, label_test,label1_test)).cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
     
     
-    x1 = np.multiply(phy_payload_test, groundtruth_test)>0
-    x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])
-    print("baseline acc : ", np.mean(x1>0))
+    #x1 = np.multiply(phy_payload_test, groundtruth_test)>0
+    #x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])
+    #print("baseline acc : ", np.mean(x1>0))
 
     return train_data, test_data
 
@@ -135,11 +139,11 @@ def NN_training(generator, discriminator, data_path, logdir):
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
-    #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    loss_Sparse = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     loss_mse = tf.keras.losses.CosineSimilarity(axis=2)   
     #loss_mse = tf.keras.losses.MeanSquaredError(axis=2)
     MSE_loss = tf.metrics.Mean()
-    Accuracy = tf.metrics.Mean()
+    Accuracy = tf.keras.metrics.SparseCategoricalAccuracy()#tf.metrics.Mean()
     G_loss = tf.metrics.Mean()
     D_loss = tf.metrics.Mean()
     
@@ -148,19 +152,21 @@ def NN_training(generator, discriminator, data_path, logdir):
     print("The dataset has been loaded!")
 
     @tf.function
-    def step(csi, pilot, phy_payload, groundtruth, training):
+    def step(csi, pilot,phy_payload, groundtruth, label,label1, training):
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_out = generator(csi, pilot,phy_payload, training)
             
             d_real_logits = discriminator(groundtruth)
             d_fake_logits = discriminator(generated_out)
-            d_loss_real = -tf.reduce_mean(d_real_logits)
-            d_loss_fake = tf.reduce_mean(d_fake_logits)
-
+            print(d_real_logits.shape)
+            #d_loss_real = -tf.reduce_mean(d_real_logits)
+            #d_loss_fake = tf.reduce_mean(d_fake_logits)
+            d_loss_real = loss_Sparse(label,d_real_logits)
+            d_loss_fake = loss_Sparse(tf.math.subtract(tf.cast(15, tf.float32),label),d_fake_logits)
             disc_loss = d_loss_real + d_loss_fake
             reconstruction_loss = loss_mse(groundtruth, generated_out)
-            gen_loss = -d_loss_fake + reconstruction_loss
+            gen_loss = d_loss_fake + reconstruction_loss
 
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
@@ -170,12 +176,12 @@ def NN_training(generator, discriminator, data_path, logdir):
             discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             for w in discriminator.trainable_variables:
                 w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        #accuracy(gen_loss)
+        Accuracy(label,generated_out)
         G_loss(- d_loss_fake)
         D_loss(disc_loss)
         MSE_loss(reconstruction_loss)
-        x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
-        Accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(x1[:, :, :, 0], x1[:, :, :, 1]) > 0, tf.float32)))
+        #x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
+        #Accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(x1[:, :, :, 0], x1[:, :, :, 1]) > 0, tf.float32)))
         #Accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)))
         return generated_out
     
@@ -183,9 +189,10 @@ def NN_training(generator, discriminator, data_path, logdir):
     best_validation_acc = 0
     print("start training...")
     for epoch in range(EPOCHS):
-        for csi, pilot, phy_payload, groundtruth in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
+        for csi, pilot,phy_payload, groundtruth, label,label1 in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
+
             training_step += 1
-            step(csi, pilot, phy_payload, groundtruth, training=True)
+            step(csi, pilot, phy_payload, groundtruth, label,label1, training=True)
 
             if training_step % 200 == 0:
                 with writer.as_default():
@@ -202,8 +209,9 @@ def NN_training(generator, discriminator, data_path, logdir):
         D_loss.reset_states()
         MSE_loss.reset_states()
         Accuracy.reset_states()
-        for csi, pilot,  phy_payload, label in test_data:
-            generated_out = step(csi, pilot,  phy_payload, label, training=False)
+        for csi, pilot,phy_payload,groundtruth, label, label1 in test_data:
+            generated_out = step(csi, pilot, phy_payload, groundtruth, label,label1, training=False)
+
             # print((generated_out.numpy())[0])
 
             with writer.as_default():

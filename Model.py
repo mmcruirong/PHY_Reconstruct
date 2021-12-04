@@ -101,19 +101,19 @@ def generator():
 
 def discriminator():   
     gen_out = tf.keras.Input(shape=(40, 48,2))
-    out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(gen_out)
+    out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(gen_out)
     out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv2D(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=16, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(out)
-    out = tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    #out = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(out)
+    out = tf.keras.layers.Conv2D(filters=32, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv2D(filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv2D(filters=64, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(out)
 
-    out = tf.keras.layers.Dense(1)(out)
+    out = tf.keras.layers.Dense(16)(out)
     return tf.keras.Model(inputs=gen_out, outputs=out)
 
 class PHY_Reconstruction_Generator(tf.keras.Model):

@@ -199,7 +199,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     loss_mse = tf.keras.losses.MeanAbsoluteError()
     MSE_loss = tf.metrics.Mean()
-    accuracy = tf.keras.metrics.SparseCategoricalAccuracy()#tf.keras.metrics.MeanAbsoluteError()tf.metrics.Mean()#
+    accuracy = tf.keras.metrics.SparseCategoricalAccuracy()#tf.keras.metrics.MeanAbsoluteError()#tf.metrics.Mean()#
     G_loss = tf.metrics.Mean()
     D_loss = tf.metrics.Mean()
     batch_accuracy = 0
@@ -214,10 +214,10 @@ def NN_training(generator, discriminator, data_path, logdir):
     def step(csi, pilot,phy_payload, groundtruth, label,label1, training):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             #generated_out = generator(phy_payload, training)
-            generated_out = generator([csi, pilot,phy_payload,groundtruth])
+            generated_out = generator([csi, pilot,label1,groundtruth])
 
             print(generated_out.shape)
-            print(label1.shape)
+            print(label.shape)
             #d_real_logits = discriminator(groundtruth)            
             #d_fake_logits = discriminator(generated_out)
             #d_loss_real = loss_crossentropy(label,d_real_logits)
@@ -230,7 +230,9 @@ def NN_training(generator, discriminator, data_path, logdir):
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)    
             #gen_loss = loss_crossentropy(tf.reshape(label1,[16000*12,1]),tf.reshape(generated_out,[16000*12,4])) #+ reconstruction_loss
-            gen_loss = loss_crossentropy(label1,generated_out)
+            gen_loss = loss_crossentropy(label,generated_out)
+            #gen_loss = loss_mse(groundtruth,generated_out)
+
             #gen_loss = loss_cosine(groundtruth,generated_out)
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
@@ -240,7 +242,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        accuracy(tf.reshape(label1,[16000*12,1]),tf.reshape(generated_out,[16000*12,4]))
+        accuracy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,16]))
         #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
         #D_loss(disc_loss)
