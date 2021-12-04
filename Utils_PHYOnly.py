@@ -19,7 +19,7 @@ def data_preprocessing_for_each_payload(data):
     pilot_out = []   
     phy_payload = []
     label = []
-    LabelTx = []
+    label1 = []
     ber = []
     ser = []
     #gt_out = []
@@ -29,7 +29,7 @@ def data_preprocessing_for_each_payload(data):
     Phypayload = data[3] # Constellation -> Rx after EQ RAW -> Raw signal
     Groundtruth = data[2]
     Label = data[5]
-    LabelTx = data[6]
+    Label1 = data[6]
     BER = data[7]
     SER = data[8]
     #mapping = np.array([0,1,2,3])
@@ -62,17 +62,17 @@ def data_preprocessing_for_each_payload(data):
         groundtruth.append((np.concatenate((groundtruth_amp,groundtruth_angle),axis = 2)))
 
         label.append(Label[i_sample][0].reshape(40,48,1, order='F'))
-        LabelTx.append(LabelTx[i_sample][0].reshape(40,48,1, order='F'))
+        label1.append(Label1[i_sample][0].reshape(40,48,1, order='F'))
 
-        ber.append(BER[i_sample][0])
-        ser.append(SER[i_sample][0])
+        ber.append(BER[i_sample][0].reshape(1,1))
+        ser.append(SER[i_sample][0].reshape(1,1))
         #groundtruth.append([groundtruth_amp,groundtruth_angle]) 
     csi_out = np.array(csi_out)# (2, 48, 1)
     pilot_out = np.array(pilot_out) # (2, 40, 4)
     phy_payload = np.array(phy_payload) # (2, 40, 48)
     groundtruth = np.array(groundtruth) # (2, 40, 48)
     label = np.array(label)
-    LabelTx = np.array(LabelTx)
+    label1 = np.array(label1)
     ber = np.array(ber)
     ser = np.array(ser)
     print('CSI_SHAPE=',csi_out.shape)
@@ -80,7 +80,9 @@ def data_preprocessing_for_each_payload(data):
     print('phy_SHAPE=',phy_payload.shape)
     print('ground_SHAPE=',groundtruth.shape)
     print('label_SHAPE=',label.shape)
-    return phy_payload, groundtruth, label, LabelTx,csi_out,pilot_out
+    print('ber_shape=',ber.shape)
+
+    return phy_payload, groundtruth, label, label1,csi_out,pilot_out,ber,ser
 
 def get_processed_dataset(data_path, split=4/5):
     file_list = os.listdir(data_path)
@@ -89,22 +91,27 @@ def get_processed_dataset(data_path, split=4/5):
     PHY_PAYLOAD = np.empty((0, 40, 48, 2))
     GROUNDTRUTH = np.empty((0, 40, 48, 2))
     LABEL = np.empty((0, 40, 48, 1))
-    LabelTx = np.empty((0, 40, 48, 1))
+    LABEL1 = np.empty((0, 40, 48, 1))
+    BER = np.empty((0, 1,1))
+    SER = np.empty((0, 1,1))
     #GT = np.empty((0, 40, 48, 1))
     file_list.sort()
     # print(file_list)
     for file in file_list:
        data_chunk = data_loader_for_each_payload(data_path + '/' + file)
-       phy_payload, groudtruth, Tx_label, Tx_LabelTx,csi_out,pilot_out = data_preprocessing_for_each_payload(data_chunk)
+       phy_payload, groudtruth, Tx_label, Rx_label,csi_out,pilot_out,ber,ser = data_preprocessing_for_each_payload(data_chunk)
        CSI = np.concatenate([CSI, csi_out], axis=0)
        PILOT = np.concatenate([PILOT, pilot_out], axis=0)
        PHY_PAYLOAD = np.concatenate([PHY_PAYLOAD, phy_payload], axis=0)
        GROUNDTRUTH = np.concatenate([GROUNDTRUTH, groudtruth], axis=0)
        LABEL = np.concatenate([LABEL, Tx_label], axis=0)
-       LabelTx = np.concatenate([LabelTx, Tx_LabelTx], axis=0)
+       LABEL1 = np.concatenate([LABEL1, Rx_label], axis=0)
+       BER = np.concatenate([BER, ber], axis=0)
+       SER = np.concatenate([SER, ser], axis=0)
 
        #GT = np.concatenate([GT, gt], axis=0)
-    
+    print('BER =', np.mean(BER))
+    print('SER =', np.mean(SER))
     num_samples = LABEL.shape[0]
     rand_indices = np.random.permutation(num_samples)
     train_indices = rand_indices[:int(split*num_samples)]
@@ -117,14 +124,14 @@ def get_processed_dataset(data_path, split=4/5):
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
                         groundtruth_train=GROUNDTRUTH[train_indices, :, :, :],
                         label_train=LABEL[train_indices, :, :, :],
-                        LabelTx_train=LabelTx[train_indices, :, :, :],
+                        label1_train=LABEL1[train_indices, :, :, :],
 
                         csi_test=CSI[test_indices, :, :, :],
                         pilot_test=PILOT[test_indices, :, :, :],
                         phy_payload_test=PHY_PAYLOAD[test_indices, :, :, :],
                         groundtruth_test=GROUNDTRUTH[test_indices, :, :, :],
                         label_test=LABEL[test_indices, :, :, :],
-                        LabelTx_test=LabelTx[test_indices, :, :, :])
+                        label1_test=LABEL1[test_indices, :, :, :])
 
     print(num_samples)
 
@@ -135,16 +142,16 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         phy_payload_train = data['phy_payload_train'].astype(np.float32)
         groundtruth_train = data['groundtruth_train'].astype(np.float32)
         label_train = data['label_train'].astype(np.float32)
-        LabelTx_train = data['LabelTx_train'].astype(np.float32)
+        label1_train = data['label1_train'].astype(np.float32)
 
         #csi_train = csi_train[2000:6000,:,:,:]        
         #pilot_train = pilot_train[2000:6000,:,:,:] 
         #phy_payload_train = phy_payload_train[2000:32000,:,:,:] 
         #groundtruth_train = groundtruth_train[2000:32000,:,:,:]
         #label_train = label_train[2000:32000,:,:,:]
-        #LabelTx_train = LabelTx_train[2000:32000,:,:,:]
+        #label1_train = label1_train[2000:32000,:,:,:]
         #mixed_train = np.concatenate([phy_payload_train[0:35000,:,:,:],groundtruth_train[35000:40000,:,:,:]], axis=0)
-        #LabelTx_mixed_train = np.concatenate([LabelTx_train[0:35000,:,:,:],LabelTx_train[35000:40000,:,:,:]], axis=0)
+        #label1_mixed_train = np.concatenate([label1_train[0:35000,:,:,:],label1_train[35000:40000,:,:,:]], axis=0)
 
         #print('PHY SHAPE = ',mixed_train.shape)
    
@@ -155,18 +162,18 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         phy_payload_test = data['phy_payload_test'].astype(np.float32)
         groundtruth_test= data['groundtruth_test'].astype(np.float32)
         label_test = data['label_test'].astype(np.float32)
-        LabelTx_test = data['LabelTx_test'].astype(np.float32)
+        label1_test = data['label1_test'].astype(np.float32)
 
         csi_test = csi_test[5000:5100,:,:,:]        
         pilot_test = pilot_test[5000:5100,:,:,:] 
         phy_payload_test = phy_payload_test[5000:5100,:,:,:] 
         groundtruth_test = groundtruth_test[5000:5100,:,:,:]
         label_test = label_test[5000:5100,:,:,:]
-        LabelTx_test = LabelTx_test[5000:5100,:,:,:]
+        label1_test = label1_test[5000:5100,:,:,:]
 
-    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,phy_payload_train, groundtruth_train,label_train,LabelTx_train))#.cache().prefetch(tf.data.AUTOTUNE)
+    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,phy_payload_train, groundtruth_train,label_train,label1_train))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
-    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,phy_payload_test, groundtruth_test, label_test,LabelTx_test))#.cache().prefetch(tf.data.AUTOTUNE)
+    test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,phy_payload_test, groundtruth_test, label_test,label1_test))#.cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
     
     #print('Test_data',phy_payload_test.shape)
@@ -204,13 +211,13 @@ def NN_training(generator, discriminator, data_path, logdir):
 
 
     @tf.function
-    def step(csi, pilot,phy_payload, groundtruth, label,LabelTx, training):
+    def step(csi, pilot,phy_payload, groundtruth, label,label1, training):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             #generated_out = generator(phy_payload, training)
             generated_out = generator([csi, pilot,phy_payload,groundtruth])
 
             print(generated_out.shape)
-            print(LabelTx.shape)
+            print(label1.shape)
             #d_real_logits = discriminator(groundtruth)            
             #d_fake_logits = discriminator(generated_out)
             #d_loss_real = loss_crossentropy(label,d_real_logits)
@@ -220,10 +227,10 @@ def NN_training(generator, discriminator, data_path, logdir):
             #disc_loss = d_loss_real + d_loss_fake
             #reconstruction_loss = loss_cosine(groundtruth, generated_out)
 
-            #generated_out = generator(LabelTx,training)    
+            #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)    
-            #gen_loss = loss_crossentropy(tf.reshape(LabelTx,[16000*12,1]),tf.reshape(generated_out,[16000*12,4])) #+ reconstruction_loss
-            gen_loss = loss_crossentropy(LabelTx,generated_out)
+            #gen_loss = loss_crossentropy(tf.reshape(label1,[16000*12,1]),tf.reshape(generated_out,[16000*12,4])) #+ reconstruction_loss
+            gen_loss = loss_crossentropy(label1,generated_out)
             #gen_loss = loss_cosine(groundtruth,generated_out)
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
@@ -233,7 +240,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        accuracy(tf.reshape(LabelTx,[16000*12,1]),tf.reshape(generated_out,[16000*12,4]))
+        accuracy(tf.reshape(label1,[16000*12,1]),tf.reshape(generated_out,[16000*12,4]))
         #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
         #D_loss(disc_loss)
@@ -251,7 +258,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     #best_validation_acc = 0
     print("start training...")
     for epoch in range(EPOCHS):
-        for csi, pilot,phy_payload, groundtruth, label,LabelTx in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
+        for csi, pilot,phy_payload, groundtruth, label,label1 in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
             # CSI (1,48,1,2) -> (40,48,2)
             # PILOT (1,40,4,2) -> (40,4,2)
             # PHY (1,1920,1,2) -> (40,48,2)
@@ -262,7 +269,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
             PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*4*100,12,1,2]),axis = 2)
             Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*4*100,12,1,2]),axis = 2)
-            LabelTx_input = tf.squeeze(tf.reshape(LabelTx,[40*4*100,12,1,1]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*4*100,12,1,1]),axis = 2)
             Label_input = tf.squeeze(tf.reshape(label,[40*4*100,12,1,1]),axis = 2)
             #print('CSI SHAPE = ',Csi_input.shape)
             #print('Pilot SHAPE = ',Pilot_input.shape)
@@ -271,7 +278,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #print('label SHAPE = ',Label_input.shape)
 
             
-            step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input, LabelTx_input, training=True)
+            step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input, Label1_input, training=True)
             batch_accuracy = accuracy.result() + batch_accuracy
             #print('batch_accuracy = ', batch_accuracy)
 
@@ -287,17 +294,17 @@ def NN_training(generator, discriminator, data_path, logdir):
         G_loss.reset_states()
         accuracy.reset_states()
         
-        for csi, pilot,phy_payload,groundtruth, label, LabelTx in test_data:
+        for csi, pilot,phy_payload,groundtruth, label, label1 in test_data:
             # same as training 
             Csi_input = tf.squeeze(tf.reshape(csi,[4*100,12,1,2]),axis = 2)
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
             PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*4*100,12,1,2]),axis = 2)
             Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*4*100,12,1,2]),axis = 2)
             Label_input = tf.squeeze(tf.reshape(label,[40*4*100,12,1,1]),axis = 2)
-            LabelTx_input = tf.squeeze(tf.reshape(LabelTx,[40*4*100,12,1,1]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*4*100,12,1,1]),axis = 2)
 
             testing_step += 1
-            generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,LabelTx_input, training=False)
+            generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input, training=False)
             # print((generated_out.numpy())[0])
             testing_accuracy = accuracy.result() + testing_accuracy
             

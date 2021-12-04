@@ -16,5 +16,5 @@ if __name__ == "__main__":
 
     PHY_Net_gen = PHY_Reconstruction_AE()
     PHY_Net_disc = PHY_Reconstruction_discriminator()
-    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_QPSK_0.8.npz", "logs")#PHY_Net_disc,
+    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_16QAMSEG_0.8.npz", "logs")#PHY_Net_disc,
 #PHY_dataset_PAYLOADONLYv1_0
