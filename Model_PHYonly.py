@@ -152,11 +152,21 @@ def PHY_Reconstruction_AE():
     #LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
 
     #Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True)
-        
-    encoder_lstm = tf.keras.layers.LSTM(100,return_state=True)
+    out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=32, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)    
+    out = tf.keras.layers.Conv1D(filters=64, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    #out = tf.keras.layers.BatchNormalization()(out)
+    #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    #out = tf.keras.layers.Dense(100)(out)  
+    encoder_lstm = tf.keras.layers.LSTM(64,return_state=True, return_sequences=True)
     encoder_out, state_h, state_c = encoder_lstm(inp)
-    decoder_lstm = tf.keras.layers.LSTM(100,return_state=True, return_sequences=True)
-    decoder_out,_,_, = decoder_lstm(ground_truth,initial_state=[state_h, state_c])
+    decoder_inp = encoder_out + out
+    decoder_lstm = tf.keras.layers.LSTM(64,return_state=True, return_sequences=True)
+    decoder_out,_,_, = decoder_lstm(decoder_inp,initial_state=[state_h, state_c])
 
     #out = CNN()(out)
     out = tf.keras.layers.Dense(4,activation = 'softmax')(decoder_out)

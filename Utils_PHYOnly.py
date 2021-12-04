@@ -185,7 +185,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     loss_mse = tf.keras.losses.MeanAbsoluteError()
     MSE_loss = tf.metrics.Mean()
-    accuracy = tf.metrics.Mean()#tf.keras.metrics.SparseCategoricalAccuracy()#tf.keras.metrics.MeanAbsoluteError()
+    accuracy = tf.keras.metrics.SparseCategoricalAccuracy()#tf.keras.metrics.MeanAbsoluteError()tf.metrics.Mean()#
     G_loss = tf.metrics.Mean()
     D_loss = tf.metrics.Mean()
     batch_accuracy = 0
@@ -237,6 +237,7 @@ def NN_training(generator, discriminator, data_path, logdir):
         #accuracy(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 1]) > 0, tf.float32))
         #print(accuracy.result().shape)
         return generated_out
+    
     
     training_step = 0
     testing_step = 0
@@ -307,7 +308,7 @@ def NN_training(generator, discriminator, data_path, logdir):
                         #generator.save_weights(os.path.join('saved_models', runid + '.tf'))
                     G_loss.reset_states()                                     
                     accuracy.reset_states()
-                    tf.print(tf.math.reduce_max(testing_accuracy))
+                    #tf.print(tf.math.reduce_max(testing_accuracy))
                     testing_accuracy = 0  
 
 if __name__ == "__main__":
