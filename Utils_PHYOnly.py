@@ -41,25 +41,26 @@ def data_preprocessing_for_each_payload(data):
     for i_sample in range(num_samples):
         #csi_out.append(np.concatenate((np.real(CSI[i_sample][0]).reshape(64, 1), np.imag(CSI[i_sample][0]).reshape(64, 1)), axis=-1))
         #pilot_out.append(np.concatenate((np.real(Pilots[i_sample][0]).reshape(40,4,1), np.imag(Pilots[i_sample][0]).reshape(40,4, 1)), axis=-1))
-        csi_angle = np.real(CSI[i_sample][0]).reshape(1, 48,1)
-        csi_amp = np.imag(CSI[i_sample][0]).reshape(1, 48,1)   
-        csi_out.append(np.concatenate((csi_amp,csi_angle),axis = 2))
+        csi_real = np.real(CSI[i_sample][0]).reshape(1, 48,1)
+        csi_imag = np.imag(CSI[i_sample][0]).reshape(1, 48,1)   
+        csi_out.append(np.concatenate((csi_real,csi_imag),axis = 2))
             
 
         #csi_out = csi_out.reshape(1,48,2)
-        pilot_angle = np.real(Pilots[i_sample][0]).reshape(40, 4,1)
-        pilot_amp = np.imag(Pilots[i_sample][0]).reshape(40, 4,1)
-        pilot_out.append(np.concatenate((pilot_amp,pilot_angle),axis = 2))       
+        pilot_real = np.real(Pilots[i_sample][0]).reshape(40, 4,1)
+        pilot_imag = np.imag(Pilots[i_sample][0]).reshape(40, 4,1)
+        pilot_out.append(np.concatenate((pilot_imag,pilot_real),axis = 2))       
         #pilot_out.append([pilot_amp,pilot_angle])  
        
-        phy_payload_angle = np.real(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
-        phy_payload_amp = np.imag(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
-        phy_payload.append((np.concatenate((phy_payload_amp,phy_payload_angle),axis = 2)))      
+        phy_payload_real = np.real(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
+        phy_payload_imag = np.imag(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
+        phy_payload.append((np.concatenate((phy_payload_real,phy_payload_imag),axis = 2)))      
         #phy_payload.append([phy_payload_amp,phy_payload_angle])
         #groundtruth.append(np.transpose(mapping[np.intc(Groundtruth[i_sample][0])]).reshape(40, 48, 1))
-        groundtruth_angle = np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F')
-        groundtruth_amp = np.imag(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F')
-        groundtruth.append((np.concatenate((groundtruth_amp,groundtruth_angle),axis = 2)))
+        groundtruth_real = np.divide(np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F'),0.707)
+        #groundtruth_imag = np.imag(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
+        groundtruth_imag = np.zeros((40, 48,1)) # This is only for BPSK
+        groundtruth.append((np.concatenate((groundtruth_real,groundtruth_imag),axis = 2)))
 
         label.append(Label[i_sample][0].reshape(40,48,1, order='F'))
         label1.append(Label1[i_sample][0].reshape(40,48,1, order='F'))
@@ -118,7 +119,7 @@ def get_processed_dataset(data_path, split=4/5):
     test_indices = rand_indices[int(split*num_samples):]
     
 
-    np.savez_compressed("PHY_dataset_16QAMSEG_" + str(split), 
+    np.savez_compressed("PHY_dataset_BPSKSEG_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -214,7 +215,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     def step(csi, pilot,phy_payload, groundtruth, label,label1, training):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             #generated_out = generator(phy_payload, training)
-            generated_out = generator([csi, pilot,label1,groundtruth])
+            generated_out = generator([csi, pilot,phy_payload,groundtruth])
 
             print(generated_out.shape)
             print(label.shape)
@@ -328,4 +329,4 @@ def NN_training(generator, discriminator, data_path, logdir):
                     testing_accuracy = 0  
 
 if __name__ == "__main__":
-    get_processed_dataset("16QAM")
+    get_processed_dataset("BPSK")
