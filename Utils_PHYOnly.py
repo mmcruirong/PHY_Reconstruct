@@ -243,7 +243,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        accuracy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,16]))
+        accuracy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,2]))
         #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
         #D_loss(disc_loss)

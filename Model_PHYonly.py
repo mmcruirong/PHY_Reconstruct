@@ -113,7 +113,7 @@ def CNN():
     out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Conv1DTranspose(filters=4, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Dense(16,activation = 'softmax')(out)
+    out = tf.keras.layers.Dense(2,activation = 'softmax')(out)
 
     return tf.keras.Model(inputs=inp, outputs=out)
 
