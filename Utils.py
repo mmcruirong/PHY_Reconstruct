@@ -124,9 +124,11 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     test_data = test_data.batch(test_batch_size)
     
     
-    #x1 = np.multiply(phy_payload_test, groundtruth_test)>0
-    #x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])
-    #print("baseline acc : ", np.mean(x1>0))
+    #x1 = np.multiply(phy_payload_test, groundtruth_test)>0 #QPSK
+    #x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1]) #QPSK
+
+    x1 = np.multiply(phy_payload_test[:, :, :, 0], groundtruth_test[:, :, :, 0])>0 #BPSK
+    print("baseline acc : ", np.mean(x1>0))
 
     return train_data, test_data
 
@@ -139,11 +141,12 @@ def NN_training(generator, discriminator, data_path, logdir):
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
+    loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
     loss_Sparse = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     loss_mse = tf.keras.losses.CosineSimilarity(axis=2)   
     #loss_mse = tf.keras.losses.MeanSquaredError(axis=2)
     MSE_loss = tf.metrics.Mean()
-    Accuracy = tf.keras.metrics.SparseCategoricalAccuracy()#tf.metrics.Mean()
+    Accuracy = tf.metrics.Mean()#tf.keras.metrics.SparseCategoricalAccuracy()
     G_loss = tf.metrics.Mean()
     D_loss = tf.metrics.Mean()
     
@@ -159,14 +162,21 @@ def NN_training(generator, discriminator, data_path, logdir):
             
             d_real_logits = discriminator(groundtruth)
             d_fake_logits = discriminator(generated_out)
-            print(d_real_logits.shape)
-            #d_loss_real = -tf.reduce_mean(d_real_logits)
+            #tf.print('d_loss_real',d_fake_logits.shape)
+            #d_loss_real = tf.reduce_mean(d_real_logits)
             #d_loss_fake = tf.reduce_mean(d_fake_logits)
-            d_loss_real = loss_Sparse(label,d_real_logits)
-            d_loss_fake = loss_Sparse(tf.math.subtract(tf.cast(15, tf.float32),label),d_fake_logits)
+            d_loss_real = loss_binentropy(tf.ones_like(d_real_logits),d_real_logits)
+            d_loss_fake = loss_binentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
+            #d_loss_real = -loss_Sparse(label,d_real_logits)
+            #d_loss_fake = loss_Sparse(tf.math.subtractd_fake_logits)
             disc_loss = d_loss_real + d_loss_fake
             reconstruction_loss = loss_mse(groundtruth, generated_out)
-            gen_loss = d_loss_fake + reconstruction_loss
+            gen_loss_only = loss_binentropy(tf.ones_like(d_fake_logits),d_fake_logits)
+            gen_loss = gen_loss_only + reconstruction_loss
+            #tf.print('gen_loss_only',gen_loss_only)
+            #tf.print('Reconstruct_loss',reconstruction_loss)
+            #tf.print('d_loss_real',d_loss_real)
+            #tf.print('d_loss_fake',d_loss_fake)
 
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
@@ -176,13 +186,13 @@ def NN_training(generator, discriminator, data_path, logdir):
             discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             for w in discriminator.trainable_variables:
                 w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        Accuracy(label,generated_out)
+        #Accuracy(label,generated_out)
         G_loss(- d_loss_fake)
         D_loss(disc_loss)
         MSE_loss(reconstruction_loss)
         #x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
         #Accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(x1[:, :, :, 0], x1[:, :, :, 1]) > 0, tf.float32)))
-        #Accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)))
+        Accuracy(tf.reduce_mean(tf.cast(tf.math.multiply(tf.cast(groundtruth[:, :, :, 0], tf.float32), tf.cast(generated_out[:, :, :, 0], tf.float32)) > 0, tf.float32)))
         return generated_out
     
     training_step = 0
@@ -197,8 +207,8 @@ def NN_training(generator, discriminator, data_path, logdir):
             if training_step % 200 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
-                    tf.summary.scalar('train/d_loss', G_loss.result(), training_step)
-                    tf.summary.scalar('train/g_loss', D_loss.result(), training_step)
+                    tf.summary.scalar('train/d_loss', D_loss.result(), training_step)
+                    tf.summary.scalar('train/g_loss', G_loss.result(), training_step)
                     tf.summary.scalar('train/mse_loss', MSE_loss.result(), training_step)
                     tf.summary.scalar('train/acc', Accuracy.result(), training_step)
                     G_loss.reset_states()
@@ -211,12 +221,11 @@ def NN_training(generator, discriminator, data_path, logdir):
         Accuracy.reset_states()
         for csi, pilot,phy_payload,groundtruth, label, label1 in test_data:
             generated_out = step(csi, pilot, phy_payload, groundtruth, label,label1, training=False)
-
             # print((generated_out.numpy())[0])
 
             with writer.as_default():
-                tf.summary.scalar('test/d_loss', G_loss.result(), training_step)
-                tf.summary.scalar('test/g_loss', D_loss.result(), training_step)
+                tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
+                tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
                 tf.summary.scalar('test/mse_loss', MSE_loss.result(), training_step)
                 tf.summary.scalar('test/acc', Accuracy.result(), training_step)
                 if Accuracy.result() > best_validation_acc:

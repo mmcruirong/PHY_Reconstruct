@@ -178,12 +178,17 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     test_data = test_data.batch(test_batch_size)
     
     #print('Test_data',phy_payload_test.shape)
-    x1 = np.multiply(phy_payload_test, groundtruth_test)   
-    x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])
+    #x1 = np.multiply(phy_payload_test, groundtruth_test)   #QPSK
+     #x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])  #QPSK
+    x_test = np.multiply(phy_payload_test[:, :, :, 0], groundtruth_test[:, :, :, 0])   # This is for BPSK
+    x_train = np.multiply(phy_payload_train[:, :, :, 0], groundtruth_train[:, :, :, 0])   # This is for BPSK
+   
     #print('X1 shape = ',x1.shape)
     #for i in range(100):
         #print("baseline acc : ", np.mean(x1[i,:,:]>0))
-    print("baseline acc : ", np.mean(x1>0))
+    print("Training baseline acc : ", np.mean(x_train>0))
+    print("Testing baseline acc : ", np.mean(x_test>0))
+
     return train_data, test_data
 
 def NN_training(generator, discriminator, data_path, logdir):
@@ -200,7 +205,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     loss_mse = tf.keras.losses.MeanAbsoluteError()
     MSE_loss = tf.metrics.Mean()
-    accuracy = tf.keras.metrics.SparseCategoricalAccuracy()#tf.keras.metrics.MeanAbsoluteError()#tf.metrics.Mean()#
+    accuracy = tf.metrics.Mean()#tf.keras.metrics.SparseCategoricalAccuracy()#tf.keras.metrics.MeanAbsoluteError()#
     G_loss = tf.metrics.Mean()
     D_loss = tf.metrics.Mean()
     batch_accuracy = 0
@@ -231,10 +236,10 @@ def NN_training(generator, discriminator, data_path, logdir):
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)    
             #gen_loss = loss_crossentropy(tf.reshape(label1,[16000*12,1]),tf.reshape(generated_out,[16000*12,4])) #+ reconstruction_loss
-            gen_loss = loss_crossentropy(label,generated_out)
+            #gen_loss = loss_crossentropy(label,generated_out)
             #gen_loss = loss_mse(groundtruth,generated_out)
 
-            #gen_loss = loss_cosine(groundtruth,generated_out)
+            gen_loss = loss_cosine(groundtruth,generated_out)
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
             #disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
@@ -243,7 +248,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        accuracy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,2]))
+        #accuracy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,2]))
         #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
         #D_loss(disc_loss)
@@ -252,6 +257,8 @@ def NN_training(generator, discriminator, data_path, logdir):
         #accuracy(tf.reduce_mean(tf.math.divide(tf.cast(x1, tf.float32),1006560)))
         #x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
         #accuracy(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 1]) > 0, tf.float32))
+        x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
+        accuracy(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 0]) > 0, tf.float32))
         #print(accuracy.result().shape)
         return generated_out
     

@@ -113,7 +113,7 @@ def discriminator():
     out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Conv2D(filters=64, kernel_size=(3,3), strides=1, padding='same', use_bias=False)(out)
 
-    out = tf.keras.layers.Dense(16)(out)
+    out = tf.keras.layers.Dense(1)(out)
     return tf.keras.Model(inputs=gen_out, outputs=out)
 
 class PHY_Reconstruction_Generator(tf.keras.Model):
@@ -149,26 +149,54 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
     def call(self, CSI, Pilot, PHY_Payload, training=False):#, CSI, Pilot, Freq, 
         csi_features = self.csi_branch(CSI, training=training)
         pilot_features = self.pilot_branch(Pilot, training=training)
-        PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
+        #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
         phy_payload_generator = self.phy_generator(PHY_Payload, training=training)        
         joint_features = self.concat_layer([csi_features, pilot_features])
         joint_features = self.fusion_layer_1(joint_features)
         joint_features = self.fusion_layer_2(joint_features)
         estimation_correction = self.DeConv_net_2(joint_features)
-        out = phy_payload_generator * estimation_correction
+        out = phy_payload_generator * estimation_correction 
         #out =  self.activation(out)
         #out = self_correction    * estimation_correction  
         return out
+def CNN():
+    inp = tf.keras.Input(shape=(40,100))#, activation='leaky_relu'
+    out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv1D(filters=32, kernel_size=3, strides=2, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv1D(filters=64, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=64, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=32, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=4, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Dense(2,activation = 'softmax')(out)
+
+    return tf.keras.Model(inputs=inp, outputs=out)
+
 
 class PHY_Reconstruction_discriminator(tf.keras.Model):
     def __init__(self):
         super(PHY_Reconstruction_discriminator, self).__init__()
         self.phy_discriminator = discriminator()
-        self.phy_lstm = tf.keras.layers.LSTM(48, return_sequences=True) # (None, 40, 48)
+        self.phy_lstm = tf.keras.layers.LSTM(100, return_sequences=True) # (None, 40, 48)
+        self.denselayer = tf.keras.layers.Dense(48)
+        self.CNN = CNN()
     def call(self, PHY_Payload, training=False):
-        #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)        
-        phy_payload_discriminator = self.phy_discriminator(PHY_Payload, training=training)     
-        return phy_payload_discriminator
+        #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
+        #         
+        phy_payload_discriminator = self.phy_discriminator(PHY_Payload, training=training)
+        out = tf.squeeze(phy_payload_discriminator,axis=3)
+        print(out.shape)
+        out = self.phy_lstm(out)   
+        out = self.CNN(out)   
+        return out
 """               
 class PHY_Reconstruction_Net_(tf.keras.Model):
     # CSI (None, 64, 1) -> Conv1D
