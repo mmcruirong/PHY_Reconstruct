@@ -277,10 +277,10 @@ def NN_training(generator, discriminator, data_path, logdir):
             training_step += 1
             Csi_input = tf.squeeze(tf.reshape(csi,[4*100,12,1,2]),axis = 2)
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
-            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*2*100,24,1,2]),axis = 2)
-            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*2*100,24,1,2]),axis = 2)
-            Label1_input = tf.squeeze(tf.reshape(label1,[40*2*100,24,1,1]),axis = 2)
-            Label_input = tf.squeeze(tf.reshape(label,[40*2*100,24,1,1]),axis = 2)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*100,48,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*100,48,1,2]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*100,48,1,1]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40*100,48,1,1]),axis = 2)
             #print('CSI SHAPE = ',Csi_input.shape)
             #print('Pilot SHAPE = ',Pilot_input.shape)
             #print('PHY SHAPE = ',PHY_input.shape)
@@ -308,10 +308,10 @@ def NN_training(generator, discriminator, data_path, logdir):
             # same as training 
             Csi_input = tf.squeeze(tf.reshape(csi,[4*100,12,1,2]),axis = 2)
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
-            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*2*100,24,1,2]),axis = 2)
-            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*2*100,24,1,2]),axis = 2)
-            Label_input = tf.squeeze(tf.reshape(label,[40*2*100,24,1,1]),axis = 2)
-            Label1_input = tf.squeeze(tf.reshape(label1,[40*2*100,24,1,1]),axis = 2)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*100,48,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*100,48,1,2]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40*100,48,1,1]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*100,48,1,1]),axis = 2)
 
             testing_step += 1
             generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input, training=False)

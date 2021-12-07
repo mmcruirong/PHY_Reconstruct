@@ -97,7 +97,7 @@ def generator():
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def CNN():
-    inp = tf.keras.Input(shape=(24,128))#, activation='leaky_relu'
+    inp = tf.keras.Input(shape=(48,128))#, activation='leaky_relu'
     out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
@@ -142,8 +142,8 @@ def discriminator():
 def PHY_Reconstruction_AE():
     f_csi = tf.keras.Input(shape=(12,2))
     f_pilot = tf.keras.Input(shape=(4,2))
-    inp = tf.keras.Input((24,2))
-    ground_truth = tf.keras.Input((24,2))
+    inp = tf.keras.Input((48,2))
+    ground_truth = tf.keras.Input((48,2))
     phy_lstm_1 = tf.keras.layers.LSTMCell(64, name='lstm1') # (40, 48)
     correction = tf.keras.layers.LSTMCell(128)
     stackcell = [phy_lstm_1,correction]
