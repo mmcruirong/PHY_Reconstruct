@@ -142,9 +142,9 @@ def NN_training(generator, discriminator, data_path, logdir):
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
     loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
-    loss_Sparse = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    loss_mse = tf.keras.losses.CosineSimilarity(axis=2)   
-    #loss_mse = tf.keras.losses.MeanSquaredError(axis=2)
+    #loss_Sparse = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    loss_mse = loss_mse = tf.keras.losses.MeanAbsoluteError() # tf.keras.losses.CosineSimilarity(axis=2)   
+    #
     MSE_loss = tf.metrics.Mean()
     Accuracy = tf.metrics.Mean()#tf.keras.metrics.SparseCategoricalAccuracy()
     G_loss = tf.metrics.Mean()
@@ -166,12 +166,12 @@ def NN_training(generator, discriminator, data_path, logdir):
             #d_loss_real = tf.reduce_mean(d_real_logits)
             #d_loss_fake = tf.reduce_mean(d_fake_logits)
             d_loss_real = loss_binentropy(tf.ones_like(d_real_logits),d_real_logits)
-            d_loss_fake = loss_binentropy(tf.zeros_like(d_fake_logits),d_fake_logits)
+            d_loss_fake = loss_binentropy(tf.zeros_like(d_real_logits),d_fake_logits)
             #d_loss_real = -loss_Sparse(label,d_real_logits)
             #d_loss_fake = loss_Sparse(tf.math.subtractd_fake_logits)
             disc_loss = d_loss_real + d_loss_fake
             reconstruction_loss = loss_mse(groundtruth, generated_out)
-            gen_loss_only = loss_binentropy(tf.ones_like(d_fake_logits),d_fake_logits)
+            gen_loss_only = loss_binentropy(tf.ones_like(d_real_logits),d_fake_logits)
             gen_loss = gen_loss_only + reconstruction_loss
             #tf.print('gen_loss_only',gen_loss_only)
             #tf.print('Reconstruct_loss',reconstruction_loss)

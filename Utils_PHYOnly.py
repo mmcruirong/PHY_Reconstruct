@@ -165,12 +165,12 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         label_test = data['label_test'].astype(np.float32)
         label1_test = data['label1_test'].astype(np.float32)
 
-        csi_test = csi_test[5000:5100,:,:,:]        
-        pilot_test = pilot_test[5000:5100,:,:,:] 
-        phy_payload_test = phy_payload_test[5000:5100,:,:,:] 
-        groundtruth_test = groundtruth_test[5000:5100,:,:,:]
-        label_test = label_test[5000:5100,:,:,:]
-        label1_test = label1_test[5000:5100,:,:,:]
+        #csi_test = csi_test[5000:5100,:,:,:]        
+        #pilot_test = pilot_test[5000:5100,:,:,:] 
+        #phy_payload_test = phy_payload_test[5000:5100,:,:,:] 
+        #groundtruth_test = groundtruth_test[5000:5100,:,:,:]
+        #label_test = label_test[5000:5100,:,:,:]
+        #label1_test = label1_test[5000:5100,:,:,:]
 
     train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,phy_payload_train, groundtruth_train,label_train,label1_train))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
@@ -205,7 +205,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     loss_mse = tf.keras.losses.MeanAbsoluteError()
     MSE_loss = tf.metrics.Mean()
-    accuracy = tf.metrics.Mean()#tf.keras.metrics.SparseCategoricalAccuracy()#tf.keras.metrics.MeanAbsoluteError()#
+    accuracy = tf.keras.metrics.SparseCategoricalAccuracy()#tf.keras.metrics.MeanAbsoluteError()#tf.metrics.Mean()#
     G_loss = tf.metrics.Mean()
     D_loss = tf.metrics.Mean()
     batch_accuracy = 0
@@ -235,11 +235,11 @@ def NN_training(generator, discriminator, data_path, logdir):
 
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)    
-            #gen_loss = loss_crossentropy(tf.reshape(label1,[16000*12,1]),tf.reshape(generated_out,[16000*12,4])) #+ reconstruction_loss
+            gen_loss = loss_crossentropy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,2])) #+ reconstruction_loss
             #gen_loss = loss_crossentropy(label,generated_out)
             #gen_loss = loss_mse(groundtruth,generated_out)
 
-            gen_loss = loss_cosine(groundtruth,generated_out)
+            #gen_loss = loss_cosine(groundtruth,generated_out)
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
             #disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
@@ -248,7 +248,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        #accuracy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,2]))
+        accuracy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,2]))
         #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
         #D_loss(disc_loss)
@@ -257,8 +257,8 @@ def NN_training(generator, discriminator, data_path, logdir):
         #accuracy(tf.reduce_mean(tf.math.divide(tf.cast(x1, tf.float32),1006560)))
         #x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
         #accuracy(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 1]) > 0, tf.float32))
-        x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
-        accuracy(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 0]) > 0, tf.float32))
+        #x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
+        #accuracy(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 0]) > 0, tf.float32))
         #print(accuracy.result().shape)
         return generated_out
     
@@ -277,10 +277,10 @@ def NN_training(generator, discriminator, data_path, logdir):
             training_step += 1
             Csi_input = tf.squeeze(tf.reshape(csi,[4*100,12,1,2]),axis = 2)
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
-            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*4*100,12,1,2]),axis = 2)
-            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*4*100,12,1,2]),axis = 2)
-            Label1_input = tf.squeeze(tf.reshape(label1,[40*4*100,12,1,1]),axis = 2)
-            Label_input = tf.squeeze(tf.reshape(label,[40*4*100,12,1,1]),axis = 2)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*2*100,24,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*2*100,24,1,2]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*2*100,24,1,1]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40*2*100,24,1,1]),axis = 2)
             #print('CSI SHAPE = ',Csi_input.shape)
             #print('Pilot SHAPE = ',Pilot_input.shape)
             #print('PHY SHAPE = ',PHY_input.shape)
@@ -308,10 +308,10 @@ def NN_training(generator, discriminator, data_path, logdir):
             # same as training 
             Csi_input = tf.squeeze(tf.reshape(csi,[4*100,12,1,2]),axis = 2)
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
-            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*4*100,12,1,2]),axis = 2)
-            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*4*100,12,1,2]),axis = 2)
-            Label_input = tf.squeeze(tf.reshape(label,[40*4*100,12,1,1]),axis = 2)
-            Label1_input = tf.squeeze(tf.reshape(label1,[40*4*100,12,1,1]),axis = 2)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*2*100,24,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*2*100,24,1,2]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40*2*100,24,1,1]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*2*100,24,1,1]),axis = 2)
 
             testing_step += 1
             generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input, training=False)
@@ -320,12 +320,12 @@ def NN_training(generator, discriminator, data_path, logdir):
             
             #print('batch_accuracy = ', testing_accuracy)
         #print('testing_step = ', testing_step)
-            if testing_step % 1 == 0:
+            if testing_step % 100 == 0:
                 with writer.as_default():
                 #tf.summary.scalar('test/d_loss', D_loss.result(), testing_step)
                     tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
-                    tf.summary.scalar('test/acc', tf.divide(testing_accuracy,1), training_step)
-                    tf.summary.scalar('train/d_loss',  tf.math.reduce_max(testing_accuracy), training_step)
+                    tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
+                    tf.summary.scalar('train/d_loss',  tf.math.reduce_mean(testing_accuracy), training_step)
 
                     #if batch_accuracy.result() > best_validation_acc:
                         #best_validation_acc = batch_accuracy.result()
