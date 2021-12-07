@@ -193,6 +193,7 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
 
 def NN_training(generator, discriminator, data_path, logdir):
     EPOCHS = 1600
+    batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
     
@@ -210,7 +211,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     D_loss = tf.metrics.Mean()
     batch_accuracy = 0
     testing_accuracy = 0
-    train_data, test_data = load_processed_dataset(data_path, 500, 100, 100)
+    train_data, test_data = load_processed_dataset(data_path, 500, batch_size, batch_size)
     print("The dataset has been loaded!")
     
        
@@ -235,7 +236,7 @@ def NN_training(generator, discriminator, data_path, logdir):
 
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)    
-            gen_loss = loss_crossentropy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,2])) #+ reconstruction_loss
+            gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,2])) #+ reconstruction_loss
             #gen_loss = loss_crossentropy(label,generated_out)
             #gen_loss = loss_mse(groundtruth,generated_out)
 
@@ -248,7 +249,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        accuracy(tf.reshape(label,[16000*12,1]),tf.reshape(generated_out,[16000*12,2]))
+        accuracy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,2]))
         #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
         #D_loss(disc_loss)
@@ -275,12 +276,12 @@ def NN_training(generator, discriminator, data_path, logdir):
             # Groundtruth(1,1920,1,2)-> (40,48,2)
             # label (1,1920,1,1) -> (40,48,1)
             training_step += 1
-            Csi_input = tf.squeeze(tf.reshape(csi,[4*100,12,1,2]),axis = 2)
-            Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
-            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*100,48,1,2]),axis = 2)
-            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*100,48,1,2]),axis = 2)
-            Label1_input = tf.squeeze(tf.reshape(label1,[40*100,48,1,1]),axis = 2)
-            Label_input = tf.squeeze(tf.reshape(label,[40*100,48,1,1]),axis = 2)
+            Csi_input = tf.squeeze(tf.reshape(csi,[4*batch_size,12,1,2]),axis = 2)
+            Pilot_input = tf.squeeze(tf.reshape(pilot,[40*batch_size,4,1,2]),axis = 2)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*batch_size,48,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*batch_size,48,1,2]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*batch_size,48,1,1]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40*batch_size,48,1,1]),axis = 2)
             #print('CSI SHAPE = ',Csi_input.shape)
             #print('Pilot SHAPE = ',Pilot_input.shape)
             #print('PHY SHAPE = ',PHY_input.shape)
@@ -306,12 +307,12 @@ def NN_training(generator, discriminator, data_path, logdir):
         
         for csi, pilot,phy_payload,groundtruth, label, label1 in test_data:
             # same as training 
-            Csi_input = tf.squeeze(tf.reshape(csi,[4*100,12,1,2]),axis = 2)
-            Pilot_input = tf.squeeze(tf.reshape(pilot,[40*100,4,1,2]),axis = 2)
-            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*100,48,1,2]),axis = 2)
-            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*100,48,1,2]),axis = 2)
-            Label_input = tf.squeeze(tf.reshape(label,[40*100,48,1,1]),axis = 2)
-            Label1_input = tf.squeeze(tf.reshape(label1,[40*100,48,1,1]),axis = 2)
+            Csi_input = tf.squeeze(tf.reshape(csi,[4*batch_size,12,1,2]),axis = 2)
+            Pilot_input = tf.squeeze(tf.reshape(pilot,[40*batch_size,4,1,2]),axis = 2)
+            PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*batch_size,48,1,2]),axis = 2)
+            Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*batch_size,48,1,2]),axis = 2)
+            Label_input = tf.squeeze(tf.reshape(label,[40*batch_size,48,1,1]),axis = 2)
+            Label1_input = tf.squeeze(tf.reshape(label1,[40*batch_size,48,1,1]),axis = 2)
 
             testing_step += 1
             generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input, training=False)
