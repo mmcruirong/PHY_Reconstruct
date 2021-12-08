@@ -134,6 +134,7 @@ def CNN():
     out = tf.keras.layers.Conv1DTranspose(filters=4, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Flatten()(out) # (None, 60)
+
     out = tf.keras.layers.Dense(1,activation = 'sigmoid')(out)
 
     return tf.keras.Model(inputs=inp, outputs=out)
@@ -145,9 +146,7 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         self.csi_branch = feature_extractor_csi()
         self.pilot_branch = feature_extractor_pilot()        
         self.phy_generator = generator()
-        self.phy_discriminator = discriminator()
-        self.CNN = CNN()
-        self.phy_lstm = tf.keras.layers.LSTM(100, return_sequences=True) # (None, 40, 48)
+        self.phy_lstm = tf.keras.layers.LSTM(48, return_sequences=True) # (None, 40, 48)
         self.concat_layer = tf.keras.layers.Concatenate(axis=-1)
         self.fusion_layer_1 = tf.keras.layers.Dense(64, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
         self.fusion_layer_2 = tf.keras.layers.Dense(64, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
@@ -180,11 +179,7 @@ class PHY_Reconstruction_Generator(tf.keras.Model):
         joint_features = self.fusion_layer_1(joint_features)
         joint_features = self.fusion_layer_2(joint_features)
         estimation_correction = self.DeConv_net_2(joint_features)
-        out = phy_payload_generator * estimation_correction 
-        phy_payload_discriminator = self.phy_discriminator(out, training=training)
-        out = tf.squeeze(phy_payload_discriminator,axis=3)        
-        out = self.phy_lstm(out)   
-        out = self.CNN(out) 
+        out = phy_payload_generator * estimation_correction + PHY_Payload
         #out =  self.activation(out)
         #out = self_correction    * estimation_correction  
         return out
@@ -202,10 +197,10 @@ class PHY_Reconstruction_discriminator(tf.keras.Model):
         #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
         #         
         phy_payload_discriminator = self.phy_discriminator(PHY_Payload, training=training)
-        out = tf.squeeze(phy_payload_discriminator,axis=3)        
+        out = tf.squeeze(phy_payload_discriminator,axis=3)
+        print(out.shape)
         out = self.phy_lstm(out)   
-        out = self.CNN(out) 
-        #print(out.shape)  
+        out = self.CNN(out)   
         return out
 """               
 class PHY_Reconstruction_Net_(tf.keras.Model):

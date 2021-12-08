@@ -57,9 +57,10 @@ def data_preprocessing_for_each_payload(data):
         phy_payload.append((np.concatenate((phy_payload_real,phy_payload_imag),axis = 2)))      
         #phy_payload.append([phy_payload_amp,phy_payload_angle])
         #groundtruth.append(np.transpose(mapping[np.intc(Groundtruth[i_sample][0])]).reshape(40, 48, 1))
-        groundtruth_real = np.divide(np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F'),0.707)
-        #groundtruth_imag = np.imag(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
-        groundtruth_imag = np.zeros((40, 48,1)) # This is only for BPSK
+        groundtruth_real = np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F')
+        groundtruth_imag = np.imag(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
+        #groundtruth_real = np.divide(np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F'),0.707)  #this is only for BPSK
+        #groundtruth_imag = np.zeros((40, 48,1)) # This is only for BPSK
         groundtruth.append((np.concatenate((groundtruth_real,groundtruth_imag),axis = 2)))
 
         label.append(Label[i_sample][0].reshape(40,48,1, order='F'))
@@ -119,7 +120,7 @@ def get_processed_dataset(data_path, split=4/5):
     test_indices = rand_indices[int(split*num_samples):]
     
 
-    np.savez_compressed("PHY_dataset_BPSKSEG_" + str(split), 
+    np.savez_compressed("PHY_dataset_16QAMSEG_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -236,7 +237,7 @@ def NN_training(generator, discriminator, data_path, logdir):
 
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)    
-            gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,2])) #+ reconstruction_loss
+            gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,16])) #+ reconstruction_loss
             #gen_loss = loss_crossentropy(label,generated_out)
             #gen_loss = loss_mse(groundtruth,generated_out)
 
@@ -249,7 +250,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        accuracy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,2]))
+        accuracy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,16]))
         #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
         #D_loss(disc_loss)
@@ -276,7 +277,10 @@ def NN_training(generator, discriminator, data_path, logdir):
             # Groundtruth(1,1920,1,2)-> (40,48,2)
             # label (1,1920,1,1) -> (40,48,1)
             training_step += 1
-            Csi_input = tf.squeeze(tf.reshape(csi,[4*batch_size,12,1,2]),axis = 2)
+            Csi_duplicate = tf.repeat(csi,40,axis=0)
+            #print('CSI_Duplicate',Csi_duplicate.shape)
+            Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
+            #print('CSI_Input',Csi_input.shape)
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*batch_size,4,1,2]),axis = 2)
             PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*batch_size,48,1,2]),axis = 2)
             Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*batch_size,48,1,2]),axis = 2)
@@ -307,7 +311,8 @@ def NN_training(generator, discriminator, data_path, logdir):
         
         for csi, pilot,phy_payload,groundtruth, label, label1 in test_data:
             # same as training 
-            Csi_input = tf.squeeze(tf.reshape(csi,[4*batch_size,12,1,2]),axis = 2)
+            Csi_duplicate = tf.repeat(csi,40,axis=0)            
+            Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*batch_size,4,1,2]),axis = 2)
             PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*batch_size,48,1,2]),axis = 2)
             Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*batch_size,48,1,2]),axis = 2)
@@ -337,4 +342,4 @@ def NN_training(generator, discriminator, data_path, logdir):
                     testing_accuracy = 0  
 
 if __name__ == "__main__":
-    get_processed_dataset("BPSK")
+    get_processed_dataset("16QAM")

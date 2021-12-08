@@ -1,4 +1,4 @@
-from Model_PHYonly import PHY_Reconstruction_AE,PHY_Reconstruction_discriminator
+from Model_PHYonly import PHY_Reconstruction_AE,PHY_Reconstruction_discriminator#PHY_Reconstruction_Generator
 from Utils_PHYOnly import NN_training
 import tensorflow as tf
 if __name__ == "__main__":
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # Memory growth must be set before GPUs have been initialized
             print(e)
 
-    PHY_Net_gen = PHY_Reconstruction_AE()#PHY_Reconstruction_AE()
+    PHY_Net_gen = PHY_Reconstruction_AE()#PHY_Reconstruction_Generator()
     PHY_Net_disc = PHY_Reconstruction_discriminator()
-    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_BPSKSEG_0.8.npz", "logs")#PHY_Net_disc,
+    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_16QAMSEG_0.8.npz", "logs")#PHY_Net_disc, 
 #PHY_dataset_PAYLOADONLYv1_0
