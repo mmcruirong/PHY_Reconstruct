@@ -16,7 +16,7 @@ def feature_extractor_csi():
     #out = tf.keras.layers.BatchNormalization()(out)
     #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(128*scale),activation = 'sigmoid')(out)
+    out = tf.keras.layers.Dense(int(128*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
     
 
@@ -40,7 +40,7 @@ def feature_extractor_pilot():
     out = tf.keras.layers.Conv1DTranspose(filters=int(64*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dense(int(128*scale),activation = 'sigmoid')(out)
+    out = tf.keras.layers.Dense(int(128*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 
@@ -128,7 +128,7 @@ def CNN():
     out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Dense(16,activation = 'sigmoid')(out)
+    out = tf.keras.layers.Dense(2,activation = 'softmax')(out)
     
     return tf.keras.Model(inputs=inp, outputs=out)
 

@@ -198,7 +198,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    
+    Mod_order = 2
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
@@ -238,7 +238,7 @@ def NN_training(generator, discriminator, data_path, logdir):
 
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)    
-            gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,16])) #+ reconstruction_loss
+            gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
             #gen_loss = loss_crossentropy(label,generated_out)
             #gen_loss = loss_mse(groundtruth,generated_out)
 
@@ -251,7 +251,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
-        accuracy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,16]))
+        accuracy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,Mod_order]))
         #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
         #D_loss(disc_loss)
@@ -309,7 +309,7 @@ def NN_training(generator, discriminator, data_path, logdir):
                     #tf.print(tf.divide(batch_accuracy,100))
         G_loss.reset_states()
         accuracy.reset_states()
-        start_time = time.time()
+        #start_time = time.time()
         for csi, pilot,phy_payload,groundtruth, label, label1 in test_data:
             # same as training 
             Csi_duplicate = tf.repeat(csi,40,axis=0)            
@@ -341,6 +341,6 @@ def NN_training(generator, discriminator, data_path, logdir):
                     accuracy.reset_states()
                     #tf.print(tf.math.reduce_max(testing_accuracy))
                     testing_accuracy = 0  
-        print('Inferencing time for 10k frames:', time.time - start_time)
+        #print('Inferencing time for 10k frames:', time.time() - start_time)
 if __name__ == "__main__":
     get_processed_dataset("16QAM")
