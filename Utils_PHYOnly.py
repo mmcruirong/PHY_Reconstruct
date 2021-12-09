@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm, tqdm_notebook
 import os
+import time
 
 def data_loader_for_each_payload(data_path):
     data = scipy.io.loadmat(data_path)
@@ -193,7 +194,7 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     return train_data, test_data
 
 def NN_training(generator, discriminator, data_path, logdir):
-    EPOCHS = 1600
+    EPOCHS = 400
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
@@ -308,7 +309,7 @@ def NN_training(generator, discriminator, data_path, logdir):
                     #tf.print(tf.divide(batch_accuracy,100))
         G_loss.reset_states()
         accuracy.reset_states()
-        
+        start_time = time.time()
         for csi, pilot,phy_payload,groundtruth, label, label1 in test_data:
             # same as training 
             Csi_duplicate = tf.repeat(csi,40,axis=0)            
@@ -340,6 +341,6 @@ def NN_training(generator, discriminator, data_path, logdir):
                     accuracy.reset_states()
                     #tf.print(tf.math.reduce_max(testing_accuracy))
                     testing_accuracy = 0  
-
+        print('Inferencing time for 10k frames:', time.time - start_time)
 if __name__ == "__main__":
     get_processed_dataset("16QAM")
