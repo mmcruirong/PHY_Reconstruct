@@ -121,7 +121,7 @@ def get_processed_dataset(data_path, split=4/5):
     test_indices = rand_indices[int(split*num_samples):]
     
 
-    np.savez_compressed("PHY_dataset_16QAMSEG_" + str(split), 
+    np.savez_compressed("PHY_dataset_QPSKSEG_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -180,16 +180,18 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     test_data = test_data.batch(test_batch_size)
     
     #print('Test_data',phy_payload_test.shape)
-    #x1 = np.multiply(phy_payload_test, groundtruth_test)   #QPSK
-     #x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])  #QPSK
-    x_test = np.multiply(phy_payload_test[:, :, :, 0], groundtruth_test[:, :, :, 0])   # This is for BPSK
-    x_train = np.multiply(phy_payload_train[:, :, :, 0], groundtruth_train[:, :, :, 0])   # This is for BPSK
+    x1 = np.multiply(phy_payload_test, groundtruth_test)   #QPSK
+    x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])  #QPSK
+
+    #x_test = np.multiply(phy_payload_test[:, :, :, 0], groundtruth_test[:, :, :, 0])   # This is for BPSK
+    #x_train = np.multiply(phy_payload_train[:, :, :, 0], groundtruth_train[:, :, :, 0])   # This is for BPSK
    
     #print('X1 shape = ',x1.shape)
     #for i in range(100):
         #print("baseline acc : ", np.mean(x1[i,:,:]>0))
-    print("Training baseline acc : ", np.mean(x_train>0))
-    print("Testing baseline acc : ", np.mean(x_test>0))
+    print("Training baseline acc : ", np.mean(x1>0))
+    #print("Training baseline acc : ", np.mean(x_train>0))
+    #print("Testing baseline acc : ", np.mean(x_test>0))
 
     return train_data, test_data
 
@@ -198,13 +200,13 @@ def NN_training(generator, discriminator, data_path, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 2
+    Mod_order = 4
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
 
     loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-    loss_crossentropy = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+    loss_crossentropy = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     loss_mse = tf.keras.losses.MeanAbsoluteError()
     MSE_loss = tf.metrics.Mean()
@@ -279,7 +281,8 @@ def NN_training(generator, discriminator, data_path, logdir):
             # label (1,1920,1,1) -> (40,48,1)
             training_step += 1
             Csi_duplicate = tf.repeat(csi,40,axis=0)
-            #print('CSI_Duplicate',Csi_duplicate.shape)
+            #tf.print('CSI_Duplicate',Csi_duplicate[1])
+            #tf.print('CSI_Duplicate',Csi_duplicate[0])
             Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
             #print('CSI_Input',Csi_input.shape)
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*batch_size,4,1,2]),axis = 2)
@@ -343,4 +346,4 @@ def NN_training(generator, discriminator, data_path, logdir):
                     testing_accuracy = 0  
         #print('Inferencing time for 10k frames:', time.time() - start_time)
 if __name__ == "__main__":
-    get_processed_dataset("16QAM")
+    get_processed_dataset("QPSK")
