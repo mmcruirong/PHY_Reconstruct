@@ -121,7 +121,7 @@ def get_processed_dataset(data_path, split=4/5):
     test_indices = rand_indices[int(split*num_samples):]
     
 
-    np.savez_compressed("PHY_dataset_QPSKSEG_" + str(split), 
+    np.savez_compressed("PHY_dataset_BPSKSEGfull_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -346,4 +346,4 @@ def NN_training(generator, discriminator, data_path, logdir):
                     testing_accuracy = 0  
         #print('Inferencing time for 10k frames:', time.time() - start_time)
 if __name__ == "__main__":
-    get_processed_dataset("QPSK")
+    get_processed_dataset("BPSK_full")

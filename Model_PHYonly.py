@@ -2,7 +2,7 @@ from numpy.core.numeric import False_, outer
 import tensorflow as tf
 import numpy as np
 
-scale = 1
+scale = 0.8
 
 def feature_extractor_csi():
     inp = tf.keras.Input(shape=(48,2))
@@ -32,8 +32,8 @@ def feature_extractor_pilot():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(192*scale))(out)
-    out = tf.keras.layers.Reshape([6,int(32*scale)])(out)
+    out = tf.keras.layers.Dense(192)(out)
+    out = tf.keras.layers.Reshape([6,32])(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
@@ -96,8 +96,8 @@ def CNN():
     #out = tf.keras.layers.BatchNormalization()(out)
     #out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(1536*scale))(out)
-    out = tf.keras.layers.Reshape([12,int(128*scale)])(out)
+    out = tf.keras.layers.Dense(1536)(out)
+    out = tf.keras.layers.Reshape([12,128])(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(128*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
