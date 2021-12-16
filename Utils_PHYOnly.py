@@ -197,10 +197,10 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
 
 def NN_training(generator, discriminator, data_path, logdir):
     EPOCHS = 800
-    batch_size = 100
+    batch_size = 50
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 4
+    Mod_order = 2
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
