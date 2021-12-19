@@ -16,7 +16,7 @@ def feature_extractor_csi():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(4*scale))(out)
+    out = tf.keras.layers.Dense(int(16*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
     
 
@@ -43,7 +43,7 @@ def feature_extractor_pilot():
     out = tf.keras.layers.Conv1DTranspose(filters=int(8*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Dense(int(4*scale))(out)
+    out = tf.keras.layers.Dense(int(16*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def generator():
@@ -137,11 +137,11 @@ def scale_dot1():
     inp = tf.keras.Input((48,2))
     csi_branch = feature_extractor_csi()(f_csi)
     pilot_branch = feature_extractor_pilot()(f_pilot)
-    phy_branch = tf.keras.layers.Dense(32)(inp)
-    out = tf.matmul(csi_branch,pilot_branch,transpose_b = True)
+    phy_branch = tf.keras.layers.Dense(16)(inp)
+    out = csi_branch+pilot_branch
     out = tf.math.divide(out,2)
     out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.matmul(out,phy_branch)
+    out = out + phy_branch
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
 def scale_dot2():
@@ -150,11 +150,11 @@ def scale_dot2():
     inp = tf.keras.Input((48,2))
     csi_branch = feature_extractor_csi()(f_csi)
     pilot_branch = feature_extractor_pilot()(f_pilot)
-    phy_branch = tf.keras.layers.Dense(32)(inp)
-    out = tf.matmul(csi_branch,pilot_branch,transpose_b = True)
+    phy_branch = tf.keras.layers.Dense(16)(inp)
+    out = csi_branch+pilot_branch
     out = tf.math.divide(out,2)
     out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.matmul(out,phy_branch)
+    out = out + phy_branch
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
 def scale_dot3():
@@ -163,11 +163,11 @@ def scale_dot3():
     inp = tf.keras.Input((48,2))
     csi_branch = feature_extractor_csi()(f_csi)
     pilot_branch = feature_extractor_pilot()(f_pilot)
-    phy_branch = tf.keras.layers.Dense(32)(inp)
-    out = tf.matmul(csi_branch,pilot_branch,transpose_b = True)
+    phy_branch = tf.keras.layers.Dense(16)(inp)
+    out = csi_branch+pilot_branch
     out = tf.math.divide(out,2)
     out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.matmul(out,phy_branch)
+    out = out + phy_branch
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
 def scale_dot4():
@@ -176,13 +176,13 @@ def scale_dot4():
     inp = tf.keras.Input((48,2))
     csi_branch = feature_extractor_csi()(f_csi)
     pilot_branch = feature_extractor_pilot()(f_pilot)
-    phy_branch = tf.keras.layers.Dense(32)(inp)
-    out = tf.matmul(csi_branch,pilot_branch,transpose_b = True)
-    print('csi_branch', out.shape)  
+    phy_branch = tf.keras.layers.Dense(16)(inp)
+    #print('csi_branch', out.shape)  
+    out = csi_branch+pilot_branch
     out = tf.math.divide(out,2)
     out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.matmul(out,phy_branch)
-    print('pilot_branch', out.shape)
+    out = out + phy_branch
+    #print('pilot_branch', out.shape)
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
 def PHY_Reconstruction_AE():
