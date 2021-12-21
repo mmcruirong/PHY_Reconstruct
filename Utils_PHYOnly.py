@@ -121,7 +121,7 @@ def get_processed_dataset(data_path, split=4/5):
     test_indices = rand_indices[int(split*num_samples):]
     
 
-    np.savez_compressed("PHY_dataset_BPSKSEGfull_" + str(split), 
+    np.savez_compressed("PHY_dataset_BPSKSEGfull1_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -147,10 +147,10 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         label_train = data['label_train'].astype(np.float32)
         label1_train = data['label1_train'].astype(np.float32)
 
-        #csi_train = csi_train[2000:6000,:,:,:]        
-        #pilot_train = pilot_train[2000:6000,:,:,:] 
-        #phy_payload_train = phy_payload_train[2000:32000,:,:,:] 
-        #groundtruth_train = groundtruth_train[2000:32000,:,:,:]
+        #csi_train = csi_train[2000:3000,:,:,:]        
+        #pilot_train = pilot_train[2000:3000,:,:,:] 
+        #phy_payload_train = phy_payload_train[2000:3000,:,:,:] 
+        #groundtruth_train = groundtruth_train[2000:3000,:,:,:]
         #label_train = label_train[2000:32000,:,:,:]
         #label1_train = label1_train[2000:32000,:,:,:]
         #mixed_train = np.concatenate([phy_payload_train[0:35000,:,:,:],groundtruth_train[35000:40000,:,:,:]], axis=0)
@@ -167,12 +167,12 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         label_test = data['label_test'].astype(np.float32)
         label1_test = data['label1_test'].astype(np.float32)
 
-        #csi_test = csi_test[5000:5100,:,:,:]        
-        #pilot_test = pilot_test[5000:5100,:,:,:] 
-        #phy_payload_test = phy_payload_test[5000:5100,:,:,:] 
-        #groundtruth_test = groundtruth_test[5000:5100,:,:,:]
-        #label_test = label_test[5000:5100,:,:,:]
-        #label1_test = label1_test[5000:5100,:,:,:]
+        #csi_test = csi_test[1000:1100,:,:,:]        
+        #pilot_test = pilot_test[1000:1100,:,:,:] 
+        #phy_payload_test = phy_payload_test[1000:1100,:,:,:] 
+        #groundtruth_test = groundtruth_test[1000:1100,:,:,:]
+        #label_test = label_test[1000:1100,:,:,:]
+        #label1_test = label1_test[1000:1100,:,:,:]
 
     train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,phy_payload_train, groundtruth_train,label_train,label1_train))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
@@ -202,8 +202,8 @@ def NN_training(generator, discriminator, data_path, logdir):
     print(f"RUNID: {runid}")
     Mod_order = 2
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
-    generator_optimizer = tf.keras.optimizers.Adam(1e-3)
-    discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
+    generator_optimizer = tf.keras.optimizers.Adam(1e-4)
+    discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
 
     loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     loss_crossentropy = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -346,4 +346,4 @@ def NN_training(generator, discriminator, data_path, logdir):
                     testing_accuracy = 0  
         #print('Inferencing time for 10k frames:', time.time() - start_time)
 if __name__ == "__main__":
-    get_processed_dataset("BPSK_full")
+    get_processed_dataset("BPSK_full1")
