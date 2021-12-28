@@ -206,7 +206,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 4
+    Mod_order = 16
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-4)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
@@ -344,7 +344,11 @@ def NN_training(generator, discriminator, data_path, logdir):
             #print(classification_bin[0,0:32])
             #print(tf.squeeze(Label_input,axis = 2)[0,0:4])
             #print(label_bin[0,0:32])
-            #print('total', label_bin[0,0:32] - classification_bin[0,0:32])
+            #print('total', np.sum(np.abs(label_bin[0,0:32] - classification_bin[0,0:32])))
+            #print(classification_bin.shape)
+            #print(label_bin.shape)
+
+
             #for j in range(4000):
                 #for i in range(48):           
                     #classification_bin = list(map(int,bin(int(classification_result[j,i]))[2:].zfill(4)))
@@ -357,7 +361,7 @@ def NN_training(generator, discriminator, data_path, logdir):
                     #print('bit_error = ', bit_error)
                     #total_bit_error = total_bit_error + bit_error
 
-            print('BER = ', bit_error/(4000*48))
+            print('BER = ', bit_error/(4000*48*4))
             total_bit_error = total_bit_error + bit_error
 
             #tf.print('Gen_out = ',bin(int(classification_result)).replace("0b",""))
@@ -367,7 +371,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #tf.print('classification_result = ',tf.math.argmax(generated_out,axis = 2))
             #print('difference = ',difference)
             #tf.print('Average_BER = ', 1-tf.math.divide(tf.math.reduce_sum(difference),4000*48))     
-            tf.print('Testing ACC = ',accuracy.result())
+            #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
             #print('batch_accuracy = ', testing_accuracy)
@@ -378,6 +382,7 @@ def NN_training(generator, discriminator, data_path, logdir):
                     tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
                     tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
                     tf.summary.scalar('train/d_loss',  tf.math.reduce_mean(testing_accuracy), training_step)
+                    tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)
 
                     #if batch_accuracy.result() > best_validation_acc:
                         #best_validation_acc = batch_accuracy.result()
@@ -385,7 +390,8 @@ def NN_training(generator, discriminator, data_path, logdir):
                     G_loss.reset_states()                                     
                     accuracy.reset_states()
                     #tf.print(tf.math.reduce_max(testing_accuracy))
-                    testing_accuracy = 0  
+                    testing_accuracy = 0
+                    total_bit_error = 0
         #print('Inferencing time for 10k frames:', time.time() - start_time)
 if __name__ == "__main__":
     get_processed_dataset("BPSK_full1")
