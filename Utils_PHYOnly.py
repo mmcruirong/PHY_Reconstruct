@@ -153,14 +153,14 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         label_train = data['label_train'].astype(np.float32)
         label1_train = data['label1_train'].astype(np.float32)
 
-        #csi_train = csi_train[2000:3000,:,:,:]        
-        #pilot_train = pilot_train[2000:3000,:,:,:] 
-        #phy_payload_train = phy_payload_train[2000:3000,:,:,:] 
-        #groundtruth_train = groundtruth_train[2000:3000,:,:,:]
-        #label_train = label_train[2000:32000,:,:,:]
-        #label1_train = label1_train[2000:32000,:,:,:]
-        #mixed_train = np.concatenate([phy_payload_train[0:35000,:,:,:],groundtruth_train[35000:40000,:,:,:]], axis=0)
-        #label1_mixed_train = np.concatenate([label1_train[0:35000,:,:,:],label1_train[35000:40000,:,:,:]], axis=0)
+        csi_train = csi_train[2000:3000,:,:,:]        
+        pilot_train = pilot_train[2000:3000,:,:,:] 
+        phy_payload_train = phy_payload_train[2000:3000,:,:,:] 
+        groundtruth_train = groundtruth_train[2000:3000,:,:,:]
+        label_train = label_train[2000:3000,:,:,:]
+        label1_train = label1_train[2000:3000,:,:,:]
+        mixed_train = np.concatenate([phy_payload_train[0:35000,:,:,:],groundtruth_train[35000:40000,:,:,:]], axis=0)
+        label1_mixed_train = np.concatenate([label1_train[0:35000,:,:,:],label1_train[35000:40000,:,:,:]], axis=0)
 
         #print('PHY SHAPE = ',mixed_train.shape)
    
@@ -173,12 +173,12 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         label_test = data['label_test'].astype(np.float32)
         label1_test = data['label1_test'].astype(np.float32)
 
-        #csi_test = csi_test[1000:1100,:,:,:]        
-        #pilot_test = pilot_test[1000:1100,:,:,:] 
-        #phy_payload_test = phy_payload_test[1000:1100,:,:,:] 
-        #groundtruth_test = groundtruth_test[1000:1100,:,:,:]
-        #label_test = label_test[1000:1100,:,:,:]
-        #label1_test = label1_test[1000:1100,:,:,:]
+        csi_test = csi_test[1000:1100,:,:,:]        
+        pilot_test = pilot_test[1000:1100,:,:,:] 
+        phy_payload_test = phy_payload_test[1000:1100,:,:,:] 
+        groundtruth_test = groundtruth_test[1000:1100,:,:,:]
+        label_test = label_test[1000:1100,:,:,:]
+        label1_test = label1_test[1000:1100,:,:,:]
 
     train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,phy_payload_train, groundtruth_train,label_train,label1_train))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
@@ -206,7 +206,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 2
+    Mod_order = 4
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-4)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
@@ -307,7 +307,6 @@ def NN_training(generator, discriminator, data_path, logdir):
             step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input, Label1_input, training=True)
             batch_accuracy = accuracy.result() + batch_accuracy
             #print('batch_accuracy = ', batch_accuracy)
-
             if training_step % 100 == 0:
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
@@ -334,10 +333,39 @@ def NN_training(generator, discriminator, data_path, logdir):
             generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input, training=False)
             #tf.print('Gen_out = ',generated_out[1,1,:])
             classification_result = tf.math.argmax(generated_out,axis = 2)
-            difference = tf.math.subtract(Label_input, classification_result)
+            #tf.print('Gen_out = ',classification_result)
+            total_bit_error = 0
+
+            classification_bin = np.unpackbits(np.array(tf.cast(classification_result,tf.uint8)),axis =1).astype(int)
+            label_bin = np.unpackbits(np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8)),axis =1).astype(int)
+            bit_error = np.sum(np.abs(label_bin - classification_bin))
+            #print(classification_result[0,0:4])
+            #print(classification_bin[0,0:32])
+            #print(tf.squeeze(Label_input,axis = 2)[0,0:4])
+            #print(label_bin[0,0:32])
+            #print('total', label_bin[0,0:32] - classification_bin[0,0:32])
+            #for j in range(4000):
+                #for i in range(48):           
+                    #classification_bin = list(map(int,bin(int(classification_result[j,i]))[2:].zfill(4)))
+                    #label_bin = list(map(int,bin(int(Label_input[j,i]))[2:].zfill(4)))
+                    #print('classification = ', int(classification_result[j,i]))
+                    #print('classification_bin = ', classification_bin)
+                    #print('label = ', int(Label_input[j,i]))
+                    #print('label_bin = ', label_bin)                   
+                    #bit_error = np.sum(np.abs(np.array(classification_bin)-np.array(label_bin)))
+                    #print('bit_error = ', bit_error)
+                    #total_bit_error = total_bit_error + bit_error
+
+            print('total_bit_error = ', bit_error/(4000*48))
+
+            #tf.print('Gen_out = ',bin(int(classification_result)).replace("0b",""))
+            #tf.print('label = ',tf.squeeze(Label_input,axis = 2))
+
+            #difference = tf.math.abs(tf.math.subtract(tf.squeeze(tf.cast(Label_input, tf.float32),axis = 2), tf.cast(classification_result, tf.float32)))
             #tf.print('classification_result = ',tf.math.argmax(generated_out,axis = 2))
-            tf.print('difference = ',difference)
-            tf.print('Testing ACC = ',testing_accuracy)
+            #print('difference = ',difference)
+            #tf.print('Average_BER = ', 1-tf.math.divide(tf.math.reduce_sum(difference),4000*48))     
+            tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
             #print('batch_accuracy = ', testing_accuracy)
