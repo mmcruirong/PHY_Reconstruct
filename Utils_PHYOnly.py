@@ -19,6 +19,7 @@ def data_preprocessing_for_each_payload(data):
     csi_out = []
     pilot_out = []   
     phy_payload = []
+    #raw_payload = []
     label = []
     label1 = []
     ber = []
@@ -29,6 +30,7 @@ def data_preprocessing_for_each_payload(data):
     Pilots = data[1] 
     Phypayload = data[3] # Constellation -> Rx after EQ RAW -> Raw signal
     Groundtruth = data[2]
+    #Raw_payload = data[4]
     Label = data[5]
     Label1 = data[6]
     BER = data[7]
@@ -42,16 +44,20 @@ def data_preprocessing_for_each_payload(data):
     for i_sample in range(num_samples):
         #csi_out.append(np.concatenate((np.real(CSI[i_sample][0]).reshape(64, 1), np.imag(CSI[i_sample][0]).reshape(64, 1)), axis=-1))
         #pilot_out.append(np.concatenate((np.real(Pilots[i_sample][0]).reshape(40,4,1), np.imag(Pilots[i_sample][0]).reshape(40,4, 1)), axis=-1))
-        csi_real = np.real(CSI[i_sample][0]).reshape(1, 48,1)
-        csi_imag = np.imag(CSI[i_sample][0]).reshape(1, 48,1)   
+        csi_real = np.abs(CSI[i_sample][0]).reshape(1, 48,1)
+        csi_imag = np.angle(CSI[i_sample][0]).reshape(1, 48,1)   
         csi_out.append(np.concatenate((csi_real,csi_imag),axis = 2))
             
 
         #csi_out = csi_out.reshape(1,48,2)
-        pilot_real = np.real(Pilots[i_sample][0]).reshape(40, 4,1)
-        pilot_imag = np.imag(Pilots[i_sample][0]).reshape(40, 4,1)
+        pilot_real = np.abs(Pilots[i_sample][0]).reshape(40, 4,1)
+        pilot_imag = np.angle(Pilots[i_sample][0]).reshape(40, 4,1)
         pilot_out.append(np.concatenate((pilot_imag,pilot_real),axis = 2))       
         #pilot_out.append([pilot_amp,pilot_angle])  
+
+        #raw_payload_real = np.real(Raw_payload[i_sample][0]).reshape(40, 48,1, order='F')
+        #raw_payload_imag = np.imag(Raw_payload[i_sample][0]).reshape(40, 48,1, order='F')
+        #raw_payload.append((np.concatenate((raw_payload_real,raw_payload_imag),axis = 2)))    
        
         phy_payload_real = np.real(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
         phy_payload_imag = np.imag(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
@@ -113,13 +119,13 @@ def get_processed_dataset(data_path, split=4/5):
        SER = np.concatenate([SER, ser], axis=0)
 
        #GT = np.concatenate([GT, gt], axis=0)
-    print('BER =', np.mean(BER))
-    print('SER =', np.mean(SER))
+    
     num_samples = LABEL.shape[0]
     rand_indices = np.random.permutation(num_samples)
     train_indices = rand_indices[:int(split*num_samples)]
     test_indices = rand_indices[int(split*num_samples):]
-    
+    print('BER =', np.mean(BER[test_indices, :, :]))
+    print('SER =', np.mean(SER[test_indices, :, :]))
 
     np.savez_compressed("PHY_dataset_BPSKSEGfull1_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
@@ -197,7 +203,7 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
 
 def NN_training(generator, discriminator, data_path, logdir):
     EPOCHS = 800
-    batch_size = 50
+    batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
     Mod_order = 2
@@ -206,7 +212,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
 
     loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-    loss_crossentropy = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    loss_crossentropy = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     loss_cosine = tf.keras.losses.CosineSimilarity(axis=2,reduction=tf.keras.losses.Reduction.NONE)
     loss_mse = tf.keras.losses.MeanAbsoluteError()
     MSE_loss = tf.metrics.Mean()
@@ -258,7 +264,8 @@ def NN_training(generator, discriminator, data_path, logdir):
         G_loss(gen_loss)
         #D_loss(disc_loss)
         #x1 = tf.math.reduce_sum(tf.cast(tf.math.not_equal(tf.math.round(tf.cast(generated_out, tf.float32)), tf.cast(label, tf.float32)), tf.float32))
-        #tf.print(x1)
+
+
         #accuracy(tf.reduce_mean(tf.math.divide(tf.cast(x1, tf.float32),1006560)))
         #x1 = tf.cast(tf.math.multiply(tf.cast(groundtruth, tf.float32), tf.cast(generated_out, tf.float32)) > 0, tf.float32)
         #accuracy(tf.cast(tf.math.multiply(x1[:, :, 0], x1[:, :, 1]) > 0, tf.float32))
@@ -325,7 +332,9 @@ def NN_training(generator, discriminator, data_path, logdir):
 
             testing_step += 1
             generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input, training=False)
-            # print((generated_out.numpy())[0])
+            tf.print('Gen_out = ',generated_out[1,1,:])
+            tf.print('classification_result = ',tf.math.argmax(generated_out[1,1,:]))
+            tf.print('label = ',Label_input[1,1,:])
             testing_accuracy = accuracy.result() + testing_accuracy
             
             #print('batch_accuracy = ', testing_accuracy)

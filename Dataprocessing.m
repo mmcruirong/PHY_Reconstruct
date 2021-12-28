@@ -1,10 +1,10 @@
 close all
-load('/home/labuser/payload_reconstruction/BPSK/payload_0.mat')
+load('/home/labuser/payload_reconstruction/BPSK_full/payload_1.mat')
 x = 1:48;
 x_p = 1:40;
 error_table = zeros(48,1);
 error_table_t = zeros(40,1);
-for i = 100:150
+for i = 400:450
     CSI = data_set.CSI{i,1};  
     Pilot = data_set.Pilots{i,1};  
     Tx_data = data_set.Tx_dec{i,1};

@@ -107,7 +107,7 @@ def CNN():
     out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Dense(2)(out)
+    out = tf.keras.layers.Dense(2,activation = 'Softmax')(out)
     
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -140,7 +140,8 @@ def scale_dot1():
     phy_branch = tf.keras.layers.Dense(16)(inp)
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
-    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Activation('tanh')(out)
+    out = tf.keras.layers.Softmax()(out)
     out = out + phy_branch
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
@@ -153,7 +154,8 @@ def scale_dot2():
     phy_branch = tf.keras.layers.Dense(16)(inp)
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
-    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Activation('tanh')(out)
+    out = tf.keras.layers.Softmax()(out)
     out = out + phy_branch
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
@@ -166,7 +168,8 @@ def scale_dot3():
     phy_branch = tf.keras.layers.Dense(16)(inp)
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
-    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Activation('tanh')(out)
+    out = tf.keras.layers.Softmax()(out)
     out = out + phy_branch
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
@@ -180,7 +183,8 @@ def scale_dot4():
     #print('csi_branch', out.shape)  
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
-    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Activation('tanh')(out)
+    out = tf.keras.layers.Softmax()(out)
     out = out + phy_branch
     #print('pilot_branch', out.shape)
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
@@ -205,7 +209,7 @@ def PHY_Reconstruction_AE():
     LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
 
     Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True, return_sequences=True)
-    encoder_out, state_h, state_c = tf.keras.layers.LSTM(400,activation = 'tanh',return_state=True, return_sequences=True)(inp) #Reconstructioncell(EQ_out)
+    encoder_out, state_h, state_c = tf.keras.layers.LSTM(400,activation = 'tanh',return_state=True, return_sequences=True)(EQ_out) #Reconstructioncell(EQ_out)
     #out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(ground_truth)
     #out = tf.keras.layers.BatchNormalization()(out)
     #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
