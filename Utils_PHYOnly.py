@@ -332,9 +332,12 @@ def NN_training(generator, discriminator, data_path, logdir):
 
             testing_step += 1
             generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input, training=False)
-            tf.print('Gen_out = ',generated_out[1,1,:])
-            tf.print('classification_result = ',tf.math.argmax(generated_out[1,1,:]))
-            tf.print('label = ',Label_input[1,1,:])
+            #tf.print('Gen_out = ',generated_out[1,1,:])
+            classification_result = tf.math.argmax(generated_out,axis = 2)
+            difference = tf.math.subtract(Label_input, classification_result)
+            #tf.print('classification_result = ',tf.math.argmax(generated_out,axis = 2))
+            tf.print('difference = ',difference)
+            tf.print('Testing ACC = ',testing_accuracy)
             testing_accuracy = accuracy.result() + testing_accuracy
             
             #print('batch_accuracy = ', testing_accuracy)
