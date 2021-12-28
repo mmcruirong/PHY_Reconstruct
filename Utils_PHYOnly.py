@@ -153,14 +153,14 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         label_train = data['label_train'].astype(np.float32)
         label1_train = data['label1_train'].astype(np.float32)
 
-        csi_train = csi_train[2000:3000,:,:,:]        
-        pilot_train = pilot_train[2000:3000,:,:,:] 
-        phy_payload_train = phy_payload_train[2000:3000,:,:,:] 
-        groundtruth_train = groundtruth_train[2000:3000,:,:,:]
-        label_train = label_train[2000:3000,:,:,:]
-        label1_train = label1_train[2000:3000,:,:,:]
-        mixed_train = np.concatenate([phy_payload_train[0:35000,:,:,:],groundtruth_train[35000:40000,:,:,:]], axis=0)
-        label1_mixed_train = np.concatenate([label1_train[0:35000,:,:,:],label1_train[35000:40000,:,:,:]], axis=0)
+        #csi_train = csi_train[2000:3000,:,:,:]        
+        #pilot_train = pilot_train[2000:3000,:,:,:] 
+        #phy_payload_train = phy_payload_train[2000:3000,:,:,:] 
+        #groundtruth_train = groundtruth_train[2000:3000,:,:,:]
+        #label_train = label_train[2000:3000,:,:,:]
+        #label1_train = label1_train[2000:3000,:,:,:]
+        #mixed_train = np.concatenate([phy_payload_train[0:35000,:,:,:],groundtruth_train[35000:40000,:,:,:]], axis=0)
+        #label1_mixed_train = np.concatenate([label1_train[0:35000,:,:,:],label1_train[35000:40000,:,:,:]], axis=0)
 
         #print('PHY SHAPE = ',mixed_train.shape)
    
@@ -173,12 +173,12 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         label_test = data['label_test'].astype(np.float32)
         label1_test = data['label1_test'].astype(np.float32)
 
-        csi_test = csi_test[1000:1100,:,:,:]        
-        pilot_test = pilot_test[1000:1100,:,:,:] 
-        phy_payload_test = phy_payload_test[1000:1100,:,:,:] 
-        groundtruth_test = groundtruth_test[1000:1100,:,:,:]
-        label_test = label_test[1000:1100,:,:,:]
-        label1_test = label1_test[1000:1100,:,:,:]
+        #csi_test = csi_test[1000:1100,:,:,:]        
+        #pilot_test = pilot_test[1000:1100,:,:,:] 
+        #phy_payload_test = phy_payload_test[1000:1100,:,:,:] 
+        #groundtruth_test = groundtruth_test[1000:1100,:,:,:]
+        #label_test = label_test[1000:1100,:,:,:]
+        #label1_test = label1_test[1000:1100,:,:,:]
 
     train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,phy_payload_train, groundtruth_train,label_train,label1_train))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
@@ -221,6 +221,7 @@ def NN_training(generator, discriminator, data_path, logdir):
     D_loss = tf.metrics.Mean()
     batch_accuracy = 0
     testing_accuracy = 0
+    total_bit_error = 0
     train_data, test_data = load_processed_dataset(data_path, 500, batch_size, batch_size)
     print("The dataset has been loaded!")
     
@@ -334,7 +335,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #tf.print('Gen_out = ',generated_out[1,1,:])
             classification_result = tf.math.argmax(generated_out,axis = 2)
             #tf.print('Gen_out = ',classification_result)
-            total_bit_error = 0
+            
 
             classification_bin = np.unpackbits(np.array(tf.cast(classification_result,tf.uint8)),axis =1).astype(int)
             label_bin = np.unpackbits(np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8)),axis =1).astype(int)
@@ -356,7 +357,8 @@ def NN_training(generator, discriminator, data_path, logdir):
                     #print('bit_error = ', bit_error)
                     #total_bit_error = total_bit_error + bit_error
 
-            print('total_bit_error = ', bit_error/(4000*48))
+            print('BER = ', bit_error/(4000*48))
+            total_bit_error = total_bit_error + bit_error
 
             #tf.print('Gen_out = ',bin(int(classification_result)).replace("0b",""))
             #tf.print('label = ',tf.squeeze(Label_input,axis = 2))
