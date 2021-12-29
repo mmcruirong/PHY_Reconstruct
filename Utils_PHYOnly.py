@@ -144,7 +144,7 @@ def get_processed_dataset(data_path, split=4/5):
 
     print(num_samples)
 
-def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_batch_size):
+def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, test_batch_size):
     with np.load(path) as data:
         csi_train = data['csi_train'].astype(np.float32)
         pilot_train = data['pilot_train'].astype(np.float32)        
@@ -180,7 +180,30 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
         #label_test = label_test[1000:1100,:,:,:]
         #label1_test = label1_test[1000:1100,:,:,:]
 
-    train_data = tf.data.Dataset.from_tensor_slices((csi_train, pilot_train,phy_payload_train, groundtruth_train,label_train,label1_train))#.cache().prefetch(tf.data.AUTOTUNE)
+
+    with np.load(path1) as data:
+        csi_train1 = data['csi_train'].astype(np.float32)
+        pilot_train1 = data['pilot_train'].astype(np.float32)        
+        phy_payload_train1 = data['phy_payload_train'].astype(np.float32)
+        groundtruth_train1 = data['groundtruth_train'].astype(np.float32)
+        label_train1 = data['label_train'].astype(np.float32)
+        label1_train1 = data['label1_train'].astype(np.float32)
+   
+        csi_test1 = data['csi_test'].astype(np.float32)
+        pilot_test1 = data['pilot_test'].astype(np.float32)       
+        phy_payload_test1 = data['phy_payload_test'].astype(np.float32)
+        groundtruth_test1 = data['groundtruth_test'].astype(np.float32)
+        label_test1 = data['label_test'].astype(np.float32)
+        label1_test1 = data['label1_test'].astype(np.float32)
+
+    csi_complete = np.concatenate([csi_train,csi_train1,csi_test1], axis=0)
+    pilot_complete = np.concatenate([pilot_train,pilot_train1,pilot_test1], axis=0)
+    phy_payload_complete = np.concatenate([phy_payload_train,phy_payload_train1,phy_payload_test1], axis=0)
+    groundtruth_complete = np.concatenate([groundtruth_train,groundtruth_train1,groundtruth_test1], axis=0)
+    label_complete = np.concatenate([label_train,label_train1,label_test1], axis=0)
+    label1_complete = np.concatenate([label1_train,label1_train1,label1_test1], axis=0)
+    
+    train_data = tf.data.Dataset.from_tensor_slices((csi_complete, pilot_complete,phy_payload_complete, groundtruth_complete,label_complete,label1_complete))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
     test_data = tf.data.Dataset.from_tensor_slices((csi_test, pilot_test,phy_payload_test, groundtruth_test, label_test,label1_test))#.cache().prefetch(tf.data.AUTOTUNE)
     test_data = test_data.batch(test_batch_size)
@@ -200,34 +223,6 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     #print("Testing baseline acc : ", np.mean(x_test>0))
 
     return train_data, test_data
-
-def load_No_Interference_dataset(path, shuffle_buffer_size, train_batch_size, test_batch_size):
-    with np.load(path) as data:
-        csi_train = data['csi_train'].astype(np.float32)
-        pilot_train = data['pilot_train'].astype(np.float32)        
-        phy_payload_train = data['phy_payload_train'].astype(np.float32)
-        groundtruth_train = data['groundtruth_train'].astype(np.float32)
-        label_train = data['label_train'].astype(np.float32)
-        label1_train = data['label1_train'].astype(np.float32)
-   
-        csi_test = data['csi_test'].astype(np.float32)
-        pilot_test = data['pilot_test'].astype(np.float32)       
-        phy_payload_test = data['phy_payload_test'].astype(np.float32)
-        groundtruth_test= data['groundtruth_test'].astype(np.float32)
-        label_test = data['label_test'].astype(np.float32)
-        label1_test = data['label1_test'].astype(np.float32)
-
-    csi_complete = np.concatenate([csi_train,csi_test], axis=0)
-    pilot_complete = np.concatenate([pilot_train,pilot_test], axis=0)
-    phy_payload_complete = np.concatenate([phy_payload_train,phy_payload_test], axis=0)
-    groundtruth_complete = np.concatenate([groundtruth_train,groundtruth_test], axis=0)
-    label_complete = np.concatenate([label_train,label_test], axis=0)
-    label1_complete = np.concatenate([label1_train,label1_test], axis=0)
-    
-    train_data = tf.data.Dataset.from_tensor_slices((csi_complete, pilot_complete,phy_payload_complete, groundtruth_complete,label_complete,label1_complete))#.cache().prefetch(tf.data.AUTOTUNE)
-    train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
-    
-    return train_data
 
 
 def NN_training(generator, discriminator, data_path, data_path1, logdir):
@@ -252,11 +247,9 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     testing_accuracy = 0
     total_bit_error = 0
     train_data, test_data = load_processed_dataset(data_path, 500, batch_size, batch_size)
-    No_interference_data = load_No_Interference_dataset(data_path1, 500, batch_size, batch_size)
-    print("The dataset has been loaded!")
-    
+    No_interference_data = load_No_Interference_dataset(data_path1, 500, batch_size, batch_size)       
     train_data.concatenate(No_interference_data)
-
+    print("The dataset has been loaded!")
 
     @tf.function
     def step(csi, pilot,phy_payload, groundtruth, label,label1, training):
