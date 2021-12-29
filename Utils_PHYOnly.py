@@ -246,9 +246,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     batch_accuracy = 0
     testing_accuracy = 0
     total_bit_error = 0
-    train_data, test_data = load_processed_dataset(data_path, 500, batch_size, batch_size)
-    No_interference_data = load_No_Interference_dataset(data_path1, 500, batch_size, batch_size)       
-    train_data.concatenate(No_interference_data)
+    train_data, test_data = load_processed_dataset(data_path, data_path1,500, batch_size, batch_size)
     print("The dataset has been loaded!")
 
     @tf.function
