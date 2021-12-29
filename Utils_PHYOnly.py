@@ -127,7 +127,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER[test_indices, :, :]))
     print('SER =', np.mean(SER[test_indices, :, :]))
 
-    np.savez_compressed("PHY_dataset_BPSKSEGfull1_" + str(split), 
+    np.savez_compressed("PHY_dataset_BPSK_NoInter_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -186,27 +186,56 @@ def load_processed_dataset(path, shuffle_buffer_size, train_batch_size, test_bat
     test_data = test_data.batch(test_batch_size)
     
     #print('Test_data',phy_payload_test.shape)
-    x1 = np.multiply(phy_payload_test, groundtruth_test)   #QPSK
-    x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])  #QPSK
+    #x1 = np.multiply(phy_payload_test, groundtruth_test)   #QPSK
+    #x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])  #QPSK
 
-    #x_test = np.multiply(phy_payload_test[:, :, :, 0], groundtruth_test[:, :, :, 0])   # This is for BPSK
-    #x_train = np.multiply(phy_payload_train[:, :, :, 0], groundtruth_train[:, :, :, 0])   # This is for BPSK
+    x1 = np.multiply(phy_payload_test[:, :, :, 0], groundtruth_test[:, :, :, 0])   # This is for BPSK
+    #x1 = np.multiply(phy_payload_train[:, :, :, 0], groundtruth_train[:, :, :, 0])   # This is for BPSK
    
     #print('X1 shape = ',x1.shape)
     #for i in range(100):
         #print("baseline acc : ", np.mean(x1[i,:,:]>0))
-    print("Training baseline acc : ", np.mean(x1>0))
+    print("Testing baseline acc : ", np.mean(x1>0))
     #print("Training baseline acc : ", np.mean(x_train>0))
     #print("Testing baseline acc : ", np.mean(x_test>0))
 
     return train_data, test_data
 
-def NN_training(generator, discriminator, data_path, logdir):
+def load_No_Interference_dataset(path, shuffle_buffer_size, train_batch_size, test_batch_size):
+    with np.load(path) as data:
+        csi_train = data['csi_train'].astype(np.float32)
+        pilot_train = data['pilot_train'].astype(np.float32)        
+        phy_payload_train = data['phy_payload_train'].astype(np.float32)
+        groundtruth_train = data['groundtruth_train'].astype(np.float32)
+        label_train = data['label_train'].astype(np.float32)
+        label1_train = data['label1_train'].astype(np.float32)
+   
+        csi_test = data['csi_test'].astype(np.float32)
+        pilot_test = data['pilot_test'].astype(np.float32)       
+        phy_payload_test = data['phy_payload_test'].astype(np.float32)
+        groundtruth_test= data['groundtruth_test'].astype(np.float32)
+        label_test = data['label_test'].astype(np.float32)
+        label1_test = data['label1_test'].astype(np.float32)
+
+    csi_complete = np.concatenate([csi_train,csi_test], axis=0)
+    pilot_complete = np.concatenate([pilot_train,pilot_test], axis=0)
+    phy_payload_complete = np.concatenate([phy_payload_train,phy_payload_test], axis=0)
+    groundtruth_complete = np.concatenate([groundtruth_train,groundtruth_test], axis=0)
+    label_complete = np.concatenate([label_train,label_test], axis=0)
+    label1_complete = np.concatenate([label1_train,label1_test], axis=0)
+    
+    train_data = tf.data.Dataset.from_tensor_slices((csi_complete, pilot_complete,phy_payload_complete, groundtruth_complete,label_complete,label1_complete))#.cache().prefetch(tf.data.AUTOTUNE)
+    train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
+    
+    return train_data
+
+
+def NN_training(generator, discriminator, data_path, data_path1, logdir):
     EPOCHS = 800
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 16
+    Mod_order = 2
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-4)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
@@ -223,9 +252,10 @@ def NN_training(generator, discriminator, data_path, logdir):
     testing_accuracy = 0
     total_bit_error = 0
     train_data, test_data = load_processed_dataset(data_path, 500, batch_size, batch_size)
+    No_interference_data = load_No_Interference_dataset(data_path1, 500, batch_size, batch_size)
     print("The dataset has been loaded!")
     
-       
+    train_data.concatenate(No_interference_data)
 
 
     @tf.function
@@ -339,7 +369,7 @@ def NN_training(generator, discriminator, data_path, logdir):
 
             classification_bin = np.unpackbits(np.array(tf.cast(classification_result,tf.uint8)),axis =1).astype(int)
             label_bin = np.unpackbits(np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8)),axis =1).astype(int)
-            bit_error = np.sum(np.abs(label_bin - classification_bin))
+            bit_error = np.sum(np.abs(label_bin - classification_bin))/(4000*48*np.log2(Mod_order))
             #print(classification_result[0,0:4])
             #print(classification_bin[0,0:32])
             #print(tf.squeeze(Label_input,axis = 2)[0,0:4])
@@ -361,7 +391,7 @@ def NN_training(generator, discriminator, data_path, logdir):
                     #print('bit_error = ', bit_error)
                     #total_bit_error = total_bit_error + bit_error
 
-            print('BER = ', bit_error/(4000*48*4))
+            print('BER = ', bit_error)
             total_bit_error = total_bit_error + bit_error
 
             #tf.print('Gen_out = ',bin(int(classification_result)).replace("0b",""))
@@ -374,7 +404,7 @@ def NN_training(generator, discriminator, data_path, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            #print('batch_accuracy = ', testing_accuracy)
+            #print('Total_BER = ', total_bit_error)
         #print('testing_step = ', testing_step)
             if testing_step % 100 == 0:
                 with writer.as_default():
@@ -394,4 +424,4 @@ def NN_training(generator, discriminator, data_path, logdir):
                     total_bit_error = 0
         #print('Inferencing time for 10k frames:', time.time() - start_time)
 if __name__ == "__main__":
-    get_processed_dataset("BPSK_full1")
+    get_processed_dataset("BPSK_NoInter")
