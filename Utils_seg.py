@@ -253,11 +253,13 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     def step(csi, pilot,phy_payload, groundtruth, label,label1, training):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             #generated_out = generator(phy_payload, training)
+
+            disc_out = discriminator([csi, pilot])       
             generated_out = generator([csi, pilot,phy_payload,groundtruth])
 
             print(generated_out.shape)
             print(label.shape)
-            #d_real_logits = discriminator(groundtruth)            
+                 
             #d_fake_logits = discriminator(generated_out)
             #d_loss_real = loss_crossentropy(label,d_real_logits)
             #d_loss_fake = loss_crossentropy(tf.math.subtract(tf.math.multiply(tf.ones_like(label),3),label),d_fake_logits)
@@ -267,7 +269,10 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #reconstruction_loss = loss_cosine(groundtruth, generated_out)
 
             #generated_out = generator(label1,training)    
-            #classficationloss = loss_crossentropy(label,generated_out)    
+            #classficationloss = loss_crossentropy(label,generated_out)
+            #             
+            disc_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(disc_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
+    
             gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
             #gen_loss = loss_crossentropy(label,generated_out)
             #gen_loss = loss_mse(groundtruth,generated_out)
@@ -275,16 +280,16 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #gen_loss = loss_cosine(groundtruth,generated_out)
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
-            #disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
+            disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
 
             generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_weights))
-            #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
+            discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
         accuracy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,Mod_order]))
         #accuracy(groundtruth,generated_out)
         G_loss(gen_loss)
-        #D_loss(disc_loss)
+        D_loss(disc_loss)
         #x1 = tf.math.reduce_sum(tf.cast(tf.math.not_equal(tf.math.round(tf.cast(generated_out, tf.float32)), tf.cast(label, tf.float32)), tf.float32))
 
 

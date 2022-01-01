@@ -134,84 +134,81 @@ def discriminator():
 def scale_dot1():
     f_csi = tf.keras.Input(shape=(48,2))
     f_pilot = tf.keras.Input(shape=(4,2))
-    inp = tf.keras.Input((48,2))
     csi_branch = feature_extractor_csi()(f_csi)
     pilot_branch = feature_extractor_pilot()(f_pilot)
-    phy_branch = tf.keras.layers.Dense(16)(inp)
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
-    out = out + phy_branch
-    return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
+    return tf.keras.Model(inputs=[f_csi,f_pilot], outputs=out)
 
 def scale_dot2():
     f_csi = tf.keras.Input(shape=(48,2))
     f_pilot = tf.keras.Input(shape=(4,2))
-    inp = tf.keras.Input((48,2))
     csi_branch = feature_extractor_csi()(f_csi)
     pilot_branch = feature_extractor_pilot()(f_pilot)
-    phy_branch = tf.keras.layers.Dense(16)(inp)
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
-    out = out + phy_branch
-    return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
+    return tf.keras.Model(inputs=[f_csi,f_pilot], outputs=out)
 
 def scale_dot3():
     f_csi = tf.keras.Input(shape=(48,2))
     f_pilot = tf.keras.Input(shape=(4,2))
-    inp = tf.keras.Input((48,2))
     csi_branch = feature_extractor_csi()(f_csi)
     pilot_branch = feature_extractor_pilot()(f_pilot)
-    phy_branch = tf.keras.layers.Dense(16)(inp)
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
-    out = out + phy_branch
-    return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
+    return tf.keras.Model(inputs=[f_csi,f_pilot], outputs=out)
 
 def scale_dot4():
     f_csi = tf.keras.Input(shape=(48,2))
     f_pilot = tf.keras.Input(shape=(4,2))
-    inp = tf.keras.Input((48,2))
     csi_branch = feature_extractor_csi()(f_csi)
     pilot_branch = feature_extractor_pilot()(f_pilot)
-    phy_branch = tf.keras.layers.Dense(16)(inp)
     #print('csi_branch', out.shape)  
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
-    out = out + phy_branch
     #print('pilot_branch', out.shape)
-    return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
+    return tf.keras.Model(inputs=[f_csi,f_pilot], outputs=out)
 
 def CSI_Pilot_Features():
     f_csi = tf.keras.Input(shape=(48,2))
     f_pilot = tf.keras.Input(shape=(4,2))
-    inp = tf.keras.Input((48,2))
-    inp1 = scale_dot1()([f_csi,f_pilot,inp])
-    inp2 = scale_dot2()([f_csi,f_pilot,inp])
-    inp3 = scale_dot3()([f_csi,f_pilot,inp])
-    inp4 = scale_dot4()([f_csi,f_pilot,inp])   
+    
+    inp1 = scale_dot1()([f_csi,f_pilot])
+    inp2 = scale_dot2()([f_csi,f_pilot])
+    inp3 = scale_dot3()([f_csi,f_pilot])
+    inp4 = scale_dot4()([f_csi,f_pilot])   
     ground_truth = tf.keras.Input((48,2))
     #csi_branch = feature_extractor_csi()(f_csi)
     #pilot_branch = feature_extractor_pilot()(f_pilot)
     inp_concate = tf.concat([inp1,inp2,inp3,inp4],2)#encoder_out * csi_branch * pilot_branch
     #EQ_out = tf.concat([inp,csi_branch,pilot_branch],2)
-    EQ_out = tf.keras.layers.Dense(128)(inp_concate)
-    
+    EQ_out = tf.keras.layers.Dense(2,activation = 'Softmax')(inp_concate)
+    features = tf.keras.layers.Dense(128)(inp_concate)
+
+    return tf.keras.Model(inputs=[f_csi,f_pilot,ground_truth], outputs=[EQ_out,features])
+
 def PHY_Reconstruction_AE():
+    EQ_in = tf.keras.Input(shape=(48,128))
+    inp = tf.keras.Input((48,2))
+    phy_branch = tf.keras.layers.Dense(16)(inp)
+    EQ_phy = EQ_in + phy_branch
+    ground_truth = tf.keras.Input((48,2))
+
     phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     correction = tf.keras.layers.LSTMCell(int(256*scale))
     stackcell = [phy_lstm_1,correction]
     LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
 
     Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True, return_sequences=True)
-    encoder_out, state_h, state_c = tf.keras.layers.LSTM(400,activation = 'tanh',return_state=True, return_sequences=True)(EQ_out) #Reconstructioncell(EQ_out)
+    encoder_out, state_h, state_c = tf.keras.layers.LSTM(400,activation = 'tanh',return_state=True, return_sequences=True)(EQ_phy) #Reconstructioncell(EQ_out)
     #out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(ground_truth)
     #out = tf.keras.layers.BatchNormalization()(out)
     #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -228,12 +225,12 @@ def PHY_Reconstruction_AE():
     #decoder_lstm = tf.keras.layers.LSTM(64,return_state=True, return_sequences=True)
     #decoder_out,_,_, = decoder_lstm(decoder_inp,initial_state=[state_h, state_c])
 
-    print('EQ_out_shape', EQ_out.shape)
+    print('EQ_out_shape', EQ_phy.shape)
  
 
     out = CNN()(encoder_out)
     #out = tf.keras.layers.Dense(4,activation = 'softmax')(decoder_out)
-    return tf.keras.Model(inputs=[f_csi,f_pilot,inp,ground_truth], outputs=out)
+    return tf.keras.Model(inputs=[EQ_in,inp,ground_truth], outputs=out)
 
 class CVAE(tf.keras.Model):
 
