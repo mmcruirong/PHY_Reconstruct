@@ -196,12 +196,12 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         label_test1 = data['label_test'].astype(np.float32)
         label1_test1 = data['label1_test'].astype(np.float32)
 
-    csi_complete = np.concatenate([csi_train,csi_train1[1000:5100,:,:,:],csi_test1[1000:5100,:,:,:]], axis=0)
-    pilot_complete = np.concatenate([pilot_train,pilot_train1[1000:5100,:,:,:],pilot_test1[1000:5100,:,:,:]], axis=0)
-    phy_payload_complete = np.concatenate([phy_payload_train,phy_payload_train1[1000:5100,:,:,:],phy_payload_test1[1000:5100,:,:,:]], axis=0)
-    groundtruth_complete = np.concatenate([groundtruth_train,groundtruth_train1[1000:5100,:,:,:],groundtruth_test1[1000:5100,:,:,:]], axis=0)
-    label_complete = np.concatenate([label_train,label_train1[1000:5100,:,:,:],label_test1[1000:5100,:,:,:]], axis=0)
-    label1_complete = np.concatenate([label1_train,label1_train1[1000:5100,:,:,:],label1_test1[1000:5100,:,:,:]], axis=0)
+    csi_complete = np.concatenate([csi_train,csi_train1[11000:16000,:,:,:],csi_test1[11000:16000,:,:,:]], axis=0)
+    pilot_complete = np.concatenate([pilot_train,pilot_train1[11000:16000,:,:,:],pilot_test1[11000:16000,:,:,:]], axis=0)
+    phy_payload_complete = np.concatenate([phy_payload_train,phy_payload_train1[11000:16000,:,:,:],phy_payload_test1[11000:16000,:,:,:]], axis=0)
+    groundtruth_complete = np.concatenate([groundtruth_train,groundtruth_train1[11000:16000,:,:,:],groundtruth_test1[11000:16000,:,:,:]], axis=0)
+    label_complete = np.concatenate([label_train,label_train1[11000:16000,:,:,:],label_test1[11000:16000,:,:,:]], axis=0)
+    label1_complete = np.concatenate([label1_train,label1_train1[11000:16000,:,:,:],label1_test1[11000:16000,:,:,:]], axis=0)
     
     train_data = tf.data.Dataset.from_tensor_slices((csi_complete, pilot_complete,phy_payload_complete, groundtruth_complete,label_complete,label1_complete))#.cache().prefetch(tf.data.AUTOTUNE)
     train_data = train_data.shuffle(shuffle_buffer_size).batch(train_batch_size)
@@ -227,7 +227,7 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 
 def NN_training(generator, discriminator, data_path, data_path1, logdir):
     EPOCHS = 800
-    batch_size = 100
+    batch_size = 200
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
     Mod_order = 2
@@ -254,8 +254,8 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             #generated_out = generator(phy_payload, training)
 
-            disc_out = discriminator([csi, pilot])       
-            generated_out = generator([csi, pilot,phy_payload,groundtruth])
+            EQ_out,features = discriminator([csi, pilot,groundtruth])       
+            generated_out = generator([features,phy_payload,groundtruth])
 
             print(generated_out.shape)
             print(label.shape)
@@ -271,7 +271,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)
             #             
-            disc_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(disc_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
+            disc_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(EQ_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
     
             gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
             #gen_loss = loss_crossentropy(label,generated_out)
