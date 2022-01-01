@@ -140,8 +140,8 @@ def scale_dot1():
     phy_branch = tf.keras.layers.Dense(16)(inp)
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
-    #out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.keras.layers.Softmax()(out)
+    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Softmax()(out)
     out = out + phy_branch
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
@@ -154,8 +154,8 @@ def scale_dot2():
     phy_branch = tf.keras.layers.Dense(16)(inp)
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
-    #out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.keras.layers.Softmax()(out)
+    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Softmax()(out)
     out = out + phy_branch
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
@@ -168,8 +168,8 @@ def scale_dot3():
     phy_branch = tf.keras.layers.Dense(16)(inp)
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
-    #out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.keras.layers.Softmax()(out)
+    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Softmax()(out)
     out = out + phy_branch
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
 
@@ -183,8 +183,8 @@ def scale_dot4():
     #print('csi_branch', out.shape)  
     out = csi_branch+pilot_branch
     #out = tf.math.divide(out,2)
-    #out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.keras.layers.Softmax()(out)
+    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Softmax()(out)
     out = out + phy_branch
     #print('pilot_branch', out.shape)
     return tf.keras.Model(inputs=[f_csi,f_pilot,inp], outputs=out)
@@ -202,7 +202,7 @@ def PHY_Reconstruction_AE():
     #pilot_branch = feature_extractor_pilot()(f_pilot)
     inp_concate = tf.concat([inp1,inp2,inp3,inp4],2)#encoder_out * csi_branch * pilot_branch
     #EQ_out = tf.concat([inp,csi_branch,pilot_branch],2)
-    EQ_out = tf.keras.layers.Dense(64)(inp_concate)
+    EQ_out = tf.keras.layers.Dense(128)(inp_concate)
     phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     correction = tf.keras.layers.LSTMCell(int(256*scale))
     stackcell = [phy_lstm_1,correction]
