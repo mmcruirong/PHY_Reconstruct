@@ -197,11 +197,21 @@ def CSI_Pilot_Features():
     ground_truth = tf.keras.Input((48,2))
     #csi_branch = feature_extractor_csi()(f_csi)
     #pilot_branch = feature_extractor_pilot()(f_pilot)
-    inp_concate = tf.concat([inp1,inp2,inp3,inp4],2)#encoder_out * csi_branch * pilot_branch
-    inp_concate1 = tf.concat([inp11,inp21,inp31,inp41],2)#encoder_out * csi_branch * pilot_branch
-    Channel_Int = inp_concate - inp_concate1
+    inp_concate = tf.concat([inp1,inp2,inp3,inp4,inp11,inp21,inp31,inp41],2)#encoder_out * csi_branch * pilot_branch
+    #inp_concate1 = tf.concat([inp11,inp21,inp31,inp41],2)#encoder_out * csi_branch * pilot_branch
+    out = tf.keras.layers.Conv1D(filters=int(16*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(inp_concate)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Dense(32)(out)   
+    #Channel_Int = inp_concate - inp_concate1
     #EQ_out = tf.concat([inp,csi_branch,pilot_branch],2)
-    out = tf.keras.layers.Dense(32)(Channel_Int)
+    #out = tf.keras.layers.Dense(32)(Channel_Int)
     EQ_out = tf.keras.layers.Dense(2,activation = 'Softmax')(out)
     features = tf.keras.layers.Dense(128)(inp_concate)
 

@@ -227,7 +227,7 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 
 def NN_training(generator, discriminator, data_path, data_path1, logdir):
     EPOCHS = 800
-    batch_size = 50
+    batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
     Mod_order = 2
@@ -308,7 +308,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     #best_validation_acc = 0
     print("start training...")
     for epoch in range(EPOCHS):
-        for csi, pilot,phy_payload, groundtruth, label,label1 in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
+        for csi, pilot,phy_payload, groundtruth, label,label1,csi1, pilot1 in tqdm(train_data, desc=f'epoch {epoch+1}/{EPOCHS}', ascii=True):
             # CSI (1,48,1,2) -> (40,48,2)
             # PILOT (1,40,4,2) -> (40,4,2)
             # PHY (1,1920,1,2) -> (40,48,2)
@@ -325,6 +325,10 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*batch_size,48,1,2]),axis = 2)
             Label1_input = tf.squeeze(tf.reshape(label1,[40*batch_size,48,1,1]),axis = 2)
             Label_input = tf.squeeze(tf.reshape(label,[40*batch_size,48,1,1]),axis = 2)
+
+            Csi_duplicate1 = tf.repeat(csi1,40,axis=0)       
+            Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
+            Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
             #print('CSI SHAPE = ',Csi_input.shape)
             #print('Pilot SHAPE = ',Pilot_input.shape)
             #print('PHY SHAPE = ',PHY_input.shape)
@@ -332,7 +336,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #print('label SHAPE = ',Label_input.shape)
 
             
-            step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input, Label1_input, training=True)
+            step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input, Label1_input,Csi_input1, Pilot_input1, training=True)
             batch_accuracy = accuracy.result() + batch_accuracy
             #print('batch_accuracy = ', batch_accuracy)
             if training_step % 100 == 0:
@@ -347,7 +351,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         G_loss.reset_states()
         accuracy.reset_states()
         #start_time = time.time()
-        for csi, pilot,phy_payload,groundtruth, label, label1 in test_data:
+        for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1 in test_data:
             # same as training 
             Csi_duplicate = tf.repeat(csi,40,axis=0)            
             Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
@@ -356,9 +360,12 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*batch_size,48,1,2]),axis = 2)
             Label_input = tf.squeeze(tf.reshape(label,[40*batch_size,48,1,1]),axis = 2)
             Label1_input = tf.squeeze(tf.reshape(label1,[40*batch_size,48,1,1]),axis = 2)
-
+            
+            Csi_duplicate1 = tf.repeat(csi1,40,axis=0)       
+            Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
+            Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
             testing_step += 1
-            generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input, training=False)
+            generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input,Csi_input1, Pilot_input1, training=False)
             #tf.print('Gen_out = ',generated_out[1,1,:])
             classification_result = tf.math.argmax(generated_out,axis = 2)
             #tf.print('Gen_out = ',classification_result)
