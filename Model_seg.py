@@ -210,11 +210,13 @@ def CSI_Pilot_Features():
     return tf.keras.Model(inputs=[f_csi,f_pilot,f_csi1,f_pilot1,ground_truth], outputs=[EQ_out,features])
 
 def PHY_Reconstruction_AE():
-    EQ_in = tf.keras.Input(shape=(48,128))
+    EQ_in = tf.keras.Input(shape=(48,2))
     inp = tf.keras.Input((48,2))   
     ground_truth = tf.keras.Input((48,2))
     phy_branch = tf.keras.layers.Dense(128)(inp)
-    EQ_phy = EQ_in * phy_branch
+    channel_branch = tf.keras.layers.Dense(128)(EQ_in)
+
+    EQ_phy = channel_branch * phy_branch
     phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     correction = tf.keras.layers.LSTMCell(int(256*scale))
     stackcell = [phy_lstm_1,correction]

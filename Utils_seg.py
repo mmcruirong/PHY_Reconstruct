@@ -256,7 +256,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
 
             EQ_out,features = discriminator([csi, pilot,csi1, pilot1,groundtruth]) 
       
-            generated_out = generator([features,phy_payload,groundtruth])
+            generated_out = generator([EQ_out,phy_payload,groundtruth])
 
             print(generated_out.shape)
             print(label.shape)
