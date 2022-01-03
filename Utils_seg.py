@@ -255,9 +255,9 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             #generated_out = generator(phy_payload, training)
 
-            EQ_out,features = discriminator([csi, pilot,csi1, pilot1,groundtruth]) 
+            #EQ_out,features = discriminator([csi, pilot,csi1, pilot1,groundtruth]) 
       
-            generated_out = generator([EQ_out,phy_payload,groundtruth])
+            generated_out = generator([csi, pilot,csi1, pilot1,phy_payload,groundtruth])
 
             print(generated_out.shape)
             print(label.shape)
@@ -273,21 +273,21 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)
             #             
-            disc_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(EQ_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
-    
+            #disc_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(EQ_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
+            disc_loss = 0
             gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
             #gen_loss = loss_crossentropy(label,generated_out)
-            joint_loss = disc_loss + gen_loss
+            #joint_loss = disc_loss * gen_loss
             #gen_loss = loss_mse(groundtruth,generated_out)
-
+            #Joint_model = tf.keras.Model(inputs=[discriminator.input,generator.input], outputs=generated_out)
             #gen_loss = loss_cosine(groundtruth,generated_out)
         if training:
-            #gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
-            #disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
-            joint_gradients = disc_tape.gradient(joint_loss, [generator,discriminator].trainable_weights)
+            gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
+            #disc_gradients = disc_tape.gradient(joint_loss, discriminator.trainable_weights)
+            #joint_gradients = disc_tape.gradient(joint_loss, Joint_model.trainable_weights)
+            #generator_optimizer.apply_gradients(zip(joint_gradients, generator.trainable_weights))
 
-            #generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_weights))
-            joint_optimizer.apply_gradients(zip(joint_gradients, [generator,discriminator].trainable_weights))
+            generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_weights))
             #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
@@ -347,12 +347,15 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                 with writer.as_default():
                     #print(f"c_loss: {c_loss:^6.3f} | acc: {acc:^6.3f}", end='\r')
                     tf.summary.scalar('train/g_loss', G_loss.result(), training_step)
+                    tf.summary.scalar('train/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('train/acc', tf.divide(batch_accuracy,100), training_step)
-                    G_loss.reset_states()                    
+                    G_loss.reset_states()      
+                    D_loss.reset_states()                   
                     accuracy.reset_states()
                     batch_accuracy = 0         
                     #tf.print(tf.divide(batch_accuracy,100))
         G_loss.reset_states()
+        D_loss.reset_states()     
         accuracy.reset_states()
         #start_time = time.time()
         for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1 in test_data:
@@ -416,16 +419,16 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         #print('testing_step = ', testing_step)
             if testing_step % 100 == 0:
                 with writer.as_default():
-                #tf.summary.scalar('test/d_loss', D_loss.result(), testing_step)
                     tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
                     tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
-                    tf.summary.scalar('train/d_loss',  tf.math.reduce_mean(testing_accuracy), training_step)
+                    tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)
 
                     #if batch_accuracy.result() > best_validation_acc:
                         #best_validation_acc = batch_accuracy.result()
                         #generator.save_weights(os.path.join('saved_models', runid + '.tf'))
-                    G_loss.reset_states()                                     
+                    G_loss.reset_states()       
+                    D_loss.reset_states()                                 
                     accuracy.reset_states()
                     #tf.print(tf.math.reduce_max(testing_accuracy))
                     testing_accuracy = 0
