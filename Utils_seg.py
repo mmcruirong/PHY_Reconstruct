@@ -234,6 +234,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-4)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
+    joint_optimizer = tf.keras.optimizers.Adam(1e-4)
 
     loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     loss_crossentropy = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
@@ -276,15 +277,18 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     
             gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
             #gen_loss = loss_crossentropy(label,generated_out)
+            joint_loss = disc_loss + gen_loss
             #gen_loss = loss_mse(groundtruth,generated_out)
 
             #gen_loss = loss_cosine(groundtruth,generated_out)
         if training:
-            gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
-            disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
+            #gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
+            #disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
+            joint_gradients = disc_tape.gradient(joint_loss, [generator,discriminator].trainable_weights)
 
-            generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_weights))
-            discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
+            #generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_weights))
+            joint_optimizer.apply_gradients(zip(joint_gradients, [generator,discriminator].trainable_weights))
+            #discriminator_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_weights))
             #for w in discriminator.trainable_variables:
                 #w.assign(tf.clip_by_value(w, -0.04, 0.04))
         accuracy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,Mod_order]))
