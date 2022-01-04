@@ -16,7 +16,7 @@ def feature_extractor_csi():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(64*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
     
 
@@ -43,7 +43,7 @@ def feature_extractor_pilot():
     out = tf.keras.layers.Conv1DTranspose(filters=int(8*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(64*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def generator():
@@ -134,50 +134,75 @@ def discriminator():
     return tf.keras.Model(inputs=gen_out, outputs=out)
 
 def scale_dot1():
-    f_csi = tf.keras.Input(shape=(48,2))
-    f_pilot = tf.keras.Input(shape=(4,2))
-    csi_branch = feature_extractor_csi()(f_csi)
-    pilot_branch = feature_extractor_pilot()(f_pilot)
-    out = csi_branch+pilot_branch
-    #out = tf.math.divide(out,2)
+    input1 = tf.keras.Input(shape=(48,64))
+    input2 = tf.keras.Input(shape=(48,64))
+    input3 = tf.keras.Input(shape=(48,64))
+
+    out = tf.matmul(input1, input2,transpose_b=True)
+    #csi_branch+pilot_branch
+    out = tf.math.divide(out,8)
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
-    return tf.keras.Model(inputs=[f_csi,f_pilot], outputs=out)
+    out = tf.matmul(out, input3)
+    return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
 
 def scale_dot2():
-    f_csi = tf.keras.Input(shape=(48,2))
-    f_pilot = tf.keras.Input(shape=(4,2))
-    csi_branch = feature_extractor_csi()(f_csi)
-    pilot_branch = feature_extractor_pilot()(f_pilot)
-    out = csi_branch+pilot_branch
-    #out = tf.math.divide(out,2)
+    input1 = tf.keras.Input(shape=(48,64))
+    input2 = tf.keras.Input(shape=(48,64))
+    input3 = tf.keras.Input(shape=(48,64))
+
+    out = tf.matmul(input1, input2,transpose_b=True)
+    #csi_branch+pilot_branch
+    out = tf.math.divide(out,8)
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
-    return tf.keras.Model(inputs=[f_csi,f_pilot], outputs=out)
+    out = tf.matmul(out, input3)
+    return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
 
 def scale_dot3():
-    f_csi = tf.keras.Input(shape=(48,2))
-    f_pilot = tf.keras.Input(shape=(4,2))
-    csi_branch = feature_extractor_csi()(f_csi)
-    pilot_branch = feature_extractor_pilot()(f_pilot)
-    out = csi_branch+pilot_branch
-    #out = tf.math.divide(out,2)
+    input1 = tf.keras.Input(shape=(48,64))
+    input2 = tf.keras.Input(shape=(48,64))
+    input3 = tf.keras.Input(shape=(48,64))
+
+    out = tf.matmul(input1, input2,transpose_b=True)
+    #csi_branch+pilot_branch
+    out = tf.math.divide(out,8)
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
-    return tf.keras.Model(inputs=[f_csi,f_pilot], outputs=out)
+    out = tf.matmul(out, input3)
+    return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
 
 def scale_dot4():
-    f_csi = tf.keras.Input(shape=(48,2))
-    f_pilot = tf.keras.Input(shape=(4,2))
-    csi_branch = feature_extractor_csi()(f_csi)
-    pilot_branch = feature_extractor_pilot()(f_pilot)
-    #print('csi_branch', out.shape)  
-    out = csi_branch+pilot_branch
-    #out = tf.math.divide(out,2)
+    input1 = tf.keras.Input(shape=(48,64))
+    input2 = tf.keras.Input(shape=(48,64))
+    input3 = tf.keras.Input(shape=(48,64))
+
+    out = tf.matmul(input1, input2,transpose_b=True)
+    #csi_branch+pilot_branch
+    out = tf.math.divide(out,8)
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
-    #print('pilot_branch', out.shape)
-    return tf.keras.Model(inputs=[f_csi,f_pilot], outputs=out)
+    out = tf.matmul(out, input3)
+    return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
+
+def multiATT():
+    input1 = tf.keras.Input(shape=(48,64))
+    input2 = tf.keras.Input(shape=(48,64))
+    input3 = tf.keras.Input(shape=(48,64))
+
+    csi1 = scale_dot1()([input1,input2,input3])
+    csi2 = scale_dot2()([input1,input2,input3])
+    csi3 = scale_dot3()([input1,input2,input3])
+    csi4 = scale_dot4()([input1,input2,input3])  
+
+    csi_concate = tf.concat([csi1,csi2,csi3,csi4],2)
+    csi_out = tf.keras.layers.Dense(64)(csi_concate)
+    
+    csi_out = csi_out + input3
+    csi_ATTout = tf.keras.layers.BatchNormalization()(csi_out)
+   
+
+    return tf.keras.Model(inputs=[input1,input2,input3], outputs=csi_ATTout)
 
 def CSI_Pilot_Features():
     f_csi = tf.keras.Input(shape=(48,2))
@@ -185,23 +210,41 @@ def CSI_Pilot_Features():
     f_csi1 = tf.keras.Input(shape=(48,2))
     f_pilot1 = tf.keras.Input(shape=(4,2))
     
-    inp1 = scale_dot1()([f_csi,f_pilot])
-    inp2 = scale_dot2()([f_csi,f_pilot])
-    inp3 = scale_dot3()([f_csi,f_pilot])
-    inp4 = scale_dot4()([f_csi,f_pilot])  
+    csi_branch = feature_extractor_csi()(f_csi)
+    pilot_branch = feature_extractor_pilot()(f_pilot)
 
-    inp11 = scale_dot1()([f_csi1,f_pilot1])
-    inp21 = scale_dot2()([f_csi1,f_pilot1])
-    inp31 = scale_dot3()([f_csi1,f_pilot1])
-    inp41= scale_dot4()([f_csi1,f_pilot1])    
+    csi_branch1 = feature_extractor_csi()(f_csi1)
+    pilot_branch1 = feature_extractor_pilot()(f_pilot1)
+
+
+    csi_att = multiATT()([csi_branch,csi_branch,csi_branch])
+    csi_out = tf.keras.layers.Dense(64)(csi_att)
+    csi_out = csi_att + csi_out 
+    csi_att = tf.keras.layers.BatchNormalization()(csi_out)
+
+    pilot_att = multiATT()([pilot_branch,pilot_branch,pilot_branch])
+    
+    combined_att = multiATT()([csi_att,csi_att,pilot_att])
+
+
+    csi_att1 = multiATT()([csi_branch1,csi_branch1,csi_branch1])
+    csi_out1 = tf.keras.layers.Dense(64)(csi_att1)
+    csi_out1 = csi_att1 + csi_out1 
+    csi_att1 = tf.keras.layers.BatchNormalization()(csi_out1)
+
+    pilot_att1 = multiATT()([pilot_branch1,pilot_branch1,pilot_branch1])
+    
+    combined_att1 = multiATT()([csi_att1,csi_att1,pilot_att1])
+
+
     #csi_branch = feature_extractor_csi()(f_csi)
     #pilot_branch = feature_extractor_pilot()(f_pilot)
-    inp_concate = tf.concat([inp1,inp2,inp3,inp4],2)#encoder_out * csi_branch * pilot_branch
-    inp_concate1 = tf.concat([inp11,inp21,inp31,inp41],2)#encoder_out * csi_branch * pilot_branch
+    #encoder_out * csi_branch * pilot_branch
+    #inp_concate1 = tf.concat([inp11,inp21,inp31,inp41],2)#encoder_out * csi_branch * pilot_branch
     
-    out = tf.keras.layers.Dense(64)(inp_concate)
-    out1 = tf.keras.layers.Dense(64)(inp_concate1)
-    Channel_Int = out - out1
+    
+    #out1 = tf.keras.layers.Dense(64)(inp_concate1)
+    Channel_Int = combined_att - combined_att1
     #EQ_out = tf.concat([inp,csi_branch,pilot_branch],2)
     #out = tf.keras.layers.Dense(32)(Channel_Int)
     #EQ_out = tf.keras.layers.Dense(2,activation = 'Softmax')(out)
