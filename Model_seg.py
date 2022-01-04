@@ -16,7 +16,7 @@ def feature_extractor_csi():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(16*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
     
 
@@ -43,7 +43,7 @@ def feature_extractor_pilot():
     out = tf.keras.layers.Conv1DTranspose(filters=int(8*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dense(int(16*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def generator():
@@ -109,7 +109,7 @@ def CNN():
     out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
     out = tf.keras.layers.Dropout(.35)(out)
-    out = tf.keras.layers.Dense(2,activation = 'Softmax')(out)
+    out = tf.keras.layers.Dense(16,activation = 'Softmax')(out)
     
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -196,23 +196,16 @@ def CSI_Pilot_Features():
     inp41= scale_dot4()([f_csi1,f_pilot1])    
     #csi_branch = feature_extractor_csi()(f_csi)
     #pilot_branch = feature_extractor_pilot()(f_pilot)
-    #inp_concate = tf.concat([inp1,inp2,inp3,inp4],2)#encoder_out * csi_branch * pilot_branch
-    #inp_concate1 = tf.concat([inp11,inp21,inp31,inp41],2)#encoder_out * csi_branch * pilot_branch
-   
-    #out = tf.keras.layers.Dense(32)(inp_concate)
-    #out1 = tf.keras.layers.Dense(32)(inp_concate1)
-    csi_branch = feature_extractor_csi()(f_csi)
-    pilot_branch = feature_extractor_pilot()(f_pilot)
-    csi_branch1 = feature_extractor_csi()(f_csi1)
-    pilot_branch1 = feature_extractor_pilot()(f_pilot1)
-    CSI_Int = csi_branch1 - csi_branch
-    Pilot_Int = pilot_branch1 - pilot_branch
-
+    inp_concate = tf.concat([inp1,inp2,inp3,inp4],2)#encoder_out * csi_branch * pilot_branch
+    inp_concate1 = tf.concat([inp11,inp21,inp31,inp41],2)#encoder_out * csi_branch * pilot_branch
+    
+    out = tf.keras.layers.Dense(64)(inp_concate)
+    out1 = tf.keras.layers.Dense(64)(inp_concate1)
+    Channel_Int = out - out1
     #EQ_out = tf.concat([inp,csi_branch,pilot_branch],2)
-    CSI_diff = tf.keras.layers.Dense(16)(CSI_Int)
-    Pilot_diff = tf.keras.layers.Dense(16)(Pilot_Int)    #csi_branch1 - csi_branch
-    channel_mat = CSI_diff * Pilot_diff
-    features = tf.keras.layers.Dense(128)(channel_mat)
+    #out = tf.keras.layers.Dense(32)(Channel_Int)
+    #EQ_out = tf.keras.layers.Dense(2,activation = 'Softmax')(out)
+    features = tf.keras.layers.Dense(128)(Channel_Int)
 
     return tf.keras.Model(inputs=[f_csi,f_pilot,f_csi1,f_pilot1], outputs=features)
 

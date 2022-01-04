@@ -230,11 +230,11 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 2
+    Mod_order = 16
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
-    generator_optimizer = tf.keras.optimizers.Adam(1e-4)
-    discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
-    joint_optimizer = tf.keras.optimizers.Adam(1e-4)
+    generator_optimizer = tf.keras.optimizers.Adam(1e-3)
+    discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
+    joint_optimizer = tf.keras.optimizers.Adam(1e-3)
 
     loss_binentropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     loss_crossentropy = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
