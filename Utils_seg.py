@@ -358,6 +358,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         D_loss.reset_states()     
         accuracy.reset_states()
         #start_time = time.time()
+        count = 0
         for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1 in test_data:
             # same as training 
             Csi_duplicate = tf.repeat(csi,40,axis=0)            
@@ -377,9 +378,10 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             classification_result = tf.math.argmax(generated_out,axis = 2)
             #tf.print('Gen_out = ',classification_result)
             
-
-            classification_bin = np.unpackbits(np.array(tf.cast(classification_result,tf.uint8)),axis =1).astype(int)
-            label_bin = np.unpackbits(np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8)),axis =1).astype(int)
+            classifcation_np = np.array(tf.cast(classification_result,tf.uint8))
+            label_np = np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8))
+            classification_bin = np.unpackbits(classifcation_np,axis =1).astype(int)
+            label_bin = np.unpackbits(label_np,axis =1).astype(int)
             bit_error = np.sum(np.abs(label_bin - classification_bin))/(batch_size*40*48*np.log2(Mod_order))
             #print(classification_result[0,0:4])
             #print(classification_bin[0,0:32])
@@ -414,7 +416,12 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Average_BER = ', 1-tf.math.divide(tf.math.reduce_sum(difference),4000*48))     
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
-            
+            if epoch == 5:
+                scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np)
+                scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
+
+            count = count +1
+
             #print('Total_BER = ', total_bit_error)
         #print('testing_step = ', testing_step)
             if testing_step % 100 == 0:
@@ -434,5 +441,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     testing_accuracy = 0
                     total_bit_error = 0
         #print('Inferencing time for 10k frames:', time.time() - start_time)
+            
+
 if __name__ == "__main__":
     get_processed_dataset("BPSK_NoInter")

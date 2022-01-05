@@ -85,7 +85,7 @@ def generator():
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def CNN():
-    inp = tf.keras.Input(shape=(48,int(512*scale)))#, activation='leaky_relu'
+    inp = tf.keras.Input(shape=(48,128))#, activation='leaky_relu'
     out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
@@ -109,7 +109,7 @@ def CNN():
     out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
     out = tf.keras.layers.Dropout(.35)(out)
-    out = tf.keras.layers.Dense(16*scale,activation = 'Softmax')(out)
+    out = tf.keras.layers.Dense(16,activation = 'softmax')(out)
     
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -236,6 +236,14 @@ def CSI_Pilot_Features():
     
     combined_att1 = multiATT()([csi_att1,csi_att1,pilot_att1])
 
+    out_att = tf.keras.layers.Dense(64)(combined_att)
+    out_att1 = tf.keras.layers.Dense(64)(combined_att1)
+    out = out_att + combined_att
+    out1 = out_att1 + combined_att1
+    out = tf.keras.layers.BatchNormalization()(out)
+    out1 = tf.keras.layers.BatchNormalization()(out1)
+    out = tf.keras.layers.Dense(128)(out)
+    out1 = tf.keras.layers.Dense(128)(out1)
 
     #csi_branch = feature_extractor_csi()(f_csi)
     #pilot_branch = feature_extractor_pilot()(f_pilot)
@@ -244,7 +252,7 @@ def CSI_Pilot_Features():
     
     
     #out1 = tf.keras.layers.Dense(64)(inp_concate1)
-    Channel_Int = combined_att - combined_att1
+    Channel_Int = out - out1
     #EQ_out = tf.concat([inp,csi_branch,pilot_branch],2)
     #out = tf.keras.layers.Dense(32)(Channel_Int)
     #EQ_out = tf.keras.layers.Dense(2,activation = 'Softmax')(out)
@@ -265,16 +273,17 @@ def PHY_Reconstruction_AE():
     ground_truth_branch = tf.keras.layers.Dense(128)(ground_truth)
 
     features = CSI_Pilot_Features()([f_csi,f_pilot,f_csi1,f_pilot1])
-    channel_branch = tf.keras.layers.Dense(512)(features)
+    #channel_branch = tf.keras.layers.Dense(128)(features)
 
-    
+    EQ_phy = features * phy_branch
+
     phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     correction = tf.keras.layers.LSTMCell(int(256*scale))
     stackcell = [phy_lstm_1,correction]
     LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
 
     Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True, return_sequences=True)
-    encoder_out, state_h, state_c = tf.keras.layers.LSTM(512,return_state=True, return_sequences=True)(phy_branch) #Reconstructioncell(EQ_out)
+    encoder_out, state_h, state_c = tf.keras.layers.LSTM(128,return_state=True, return_sequences=True)(EQ_phy) #Reconstructioncell(EQ_out)
     #out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(ground_truth)
     #out = tf.keras.layers.BatchNormalization()(out)
     #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -293,8 +302,8 @@ def PHY_Reconstruction_AE():
 
     print('EQ_out_shape', phy_branch.shape)
  
-    EQ_phy = channel_branch * encoder_out
-    out = CNN()(EQ_phy)
+    
+    out = CNN()(encoder_out)
     #out = tf.keras.layers.Dense(4,activation = 'softmax')(decoder_out)
     return tf.keras.Model(inputs=[f_csi,f_pilot,f_csi1,f_pilot1,inp,ground_truth], outputs=out)
 
