@@ -85,7 +85,7 @@ def generator():
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def CNN():
-    inp = tf.keras.Input(shape=(48,int(100*scale)))#, activation='leaky_relu'
+    inp = tf.keras.Input(shape=(48,int(512*scale)))#, activation='leaky_relu'
     out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
@@ -109,7 +109,7 @@ def CNN():
     out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
     out = tf.keras.layers.Dropout(.35)(out)
-    out = tf.keras.layers.Dense(16,activation = 'Softmax')(out)
+    out = tf.keras.layers.Dense(16*scale,activation = 'Softmax')(out)
     
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -134,61 +134,61 @@ def discriminator():
     return tf.keras.Model(inputs=gen_out, outputs=out)
 
 def scale_dot1():
-    input1 = tf.keras.Input(shape=(48,64))
-    input2 = tf.keras.Input(shape=(48,64))
-    input3 = tf.keras.Input(shape=(48,64))
+    input1 = tf.keras.Input(shape=(48,64*scale))
+    input2 = tf.keras.Input(shape=(48,64*scale))
+    input3 = tf.keras.Input(shape=(48,64*scale))
 
     out = tf.matmul(input1, input2,transpose_b=True)
     #csi_branch+pilot_branch
-    out = tf.math.divide(out,8)
+    out = tf.math.divide(out,8*np.sqrt(scale))
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
     out = tf.matmul(out, input3)
     return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
 
 def scale_dot2():
-    input1 = tf.keras.Input(shape=(48,64))
-    input2 = tf.keras.Input(shape=(48,64))
-    input3 = tf.keras.Input(shape=(48,64))
+    input1 = tf.keras.Input(shape=(48,64*scale))
+    input2 = tf.keras.Input(shape=(48,64*scale))
+    input3 = tf.keras.Input(shape=(48,64*scale))
 
     out = tf.matmul(input1, input2,transpose_b=True)
     #csi_branch+pilot_branch
-    out = tf.math.divide(out,8)
+    out = tf.math.divide(out,8*np.sqrt(scale))
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
     out = tf.matmul(out, input3)
     return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
 
 def scale_dot3():
-    input1 = tf.keras.Input(shape=(48,64))
-    input2 = tf.keras.Input(shape=(48,64))
-    input3 = tf.keras.Input(shape=(48,64))
+    input1 = tf.keras.Input(shape=(48,64*scale))
+    input2 = tf.keras.Input(shape=(48,64*scale))
+    input3 = tf.keras.Input(shape=(48,64*scale))
 
     out = tf.matmul(input1, input2,transpose_b=True)
     #csi_branch+pilot_branch
-    out = tf.math.divide(out,8)
+    out = tf.math.divide(out,8*np.sqrt(scale))
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
     out = tf.matmul(out, input3)
     return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
 
 def scale_dot4():
-    input1 = tf.keras.Input(shape=(48,64))
-    input2 = tf.keras.Input(shape=(48,64))
-    input3 = tf.keras.Input(shape=(48,64))
+    input1 = tf.keras.Input(shape=(48,64*scale))
+    input2 = tf.keras.Input(shape=(48,64*scale))
+    input3 = tf.keras.Input(shape=(48,64*scale))
 
     out = tf.matmul(input1, input2,transpose_b=True)
     #csi_branch+pilot_branch
-    out = tf.math.divide(out,8)
+    out = tf.math.divide(out,8*np.sqrt(scale))
     out = tf.keras.layers.Activation('tanh')(out)
     #out = tf.keras.layers.Softmax()(out)
     out = tf.matmul(out, input3)
     return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
 
 def multiATT():
-    input1 = tf.keras.Input(shape=(48,64))
-    input2 = tf.keras.Input(shape=(48,64))
-    input3 = tf.keras.Input(shape=(48,64))
+    input1 = tf.keras.Input(shape=(48,64*scale))
+    input2 = tf.keras.Input(shape=(48,64*scale))
+    input3 = tf.keras.Input(shape=(48,64*scale))
 
     csi1 = scale_dot1()([input1,input2,input3])
     csi2 = scale_dot2()([input1,input2,input3])
@@ -196,7 +196,7 @@ def multiATT():
     csi4 = scale_dot4()([input1,input2,input3])  
 
     csi_concate = tf.concat([csi1,csi2,csi3,csi4],2)
-    csi_out = tf.keras.layers.Dense(64)(csi_concate)
+    csi_out = tf.keras.layers.Dense(64*scale)(csi_concate)
     
     csi_out = csi_out + input3
     csi_ATTout = tf.keras.layers.BatchNormalization()(csi_out)
@@ -218,7 +218,7 @@ def CSI_Pilot_Features():
 
 
     csi_att = multiATT()([csi_branch,csi_branch,csi_branch])
-    csi_out = tf.keras.layers.Dense(64)(csi_att)
+    csi_out = tf.keras.layers.Dense(64*scale)(csi_att)
     csi_out = csi_att + csi_out 
     csi_att = tf.keras.layers.BatchNormalization()(csi_out)
 
@@ -228,7 +228,7 @@ def CSI_Pilot_Features():
 
 
     csi_att1 = multiATT()([csi_branch1,csi_branch1,csi_branch1])
-    csi_out1 = tf.keras.layers.Dense(64)(csi_att1)
+    csi_out1 = tf.keras.layers.Dense(64*scale)(csi_att1)
     csi_out1 = csi_att1 + csi_out1 
     csi_att1 = tf.keras.layers.BatchNormalization()(csi_out1)
 
@@ -248,7 +248,7 @@ def CSI_Pilot_Features():
     #EQ_out = tf.concat([inp,csi_branch,pilot_branch],2)
     #out = tf.keras.layers.Dense(32)(Channel_Int)
     #EQ_out = tf.keras.layers.Dense(2,activation = 'Softmax')(out)
-    features = tf.keras.layers.Dense(128)(Channel_Int)
+    features = tf.keras.layers.Dense(128*scale)(Channel_Int)
 
     return tf.keras.Model(inputs=[f_csi,f_pilot,f_csi1,f_pilot1], outputs=features)
 
@@ -259,19 +259,22 @@ def PHY_Reconstruction_AE():
     f_csi1 = tf.keras.Input(shape=(48,2))
     f_pilot1 = tf.keras.Input(shape=(4,2))
     inp = tf.keras.Input((48,2))   
-    ground_truth = tf.keras.Input((48,2))
     phy_branch = tf.keras.layers.Dense(128)(inp)
-    features = CSI_Pilot_Features()([f_csi,f_pilot,f_csi1,f_pilot1])
-    channel_branch = tf.keras.layers.Dense(128)(features)
 
-    EQ_phy = channel_branch * phy_branch
+    ground_truth = tf.keras.Input((48,2))  
+    ground_truth_branch = tf.keras.layers.Dense(128)(ground_truth)
+
+    features = CSI_Pilot_Features()([f_csi,f_pilot,f_csi1,f_pilot1])
+    channel_branch = tf.keras.layers.Dense(512)(features)
+
+    
     phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     correction = tf.keras.layers.LSTMCell(int(256*scale))
     stackcell = [phy_lstm_1,correction]
     LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
 
     Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True, return_sequences=True)
-    encoder_out, state_h, state_c = tf.keras.layers.LSTM(100,return_state=True, return_sequences=True)(EQ_phy) #Reconstructioncell(EQ_out)
+    encoder_out, state_h, state_c = tf.keras.layers.LSTM(512,return_state=True, return_sequences=True)(phy_branch) #Reconstructioncell(EQ_out)
     #out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(ground_truth)
     #out = tf.keras.layers.BatchNormalization()(out)
     #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -288,10 +291,10 @@ def PHY_Reconstruction_AE():
     #decoder_lstm = tf.keras.layers.LSTM(64,return_state=True, return_sequences=True)
     #decoder_out,_,_, = decoder_lstm(decoder_inp,initial_state=[state_h, state_c])
 
-    print('EQ_out_shape', EQ_phy.shape)
+    print('EQ_out_shape', phy_branch.shape)
  
-
-    out = CNN()(encoder_out)
+    EQ_phy = channel_branch * encoder_out
+    out = CNN()(EQ_phy)
     #out = tf.keras.layers.Dense(4,activation = 'softmax')(decoder_out)
     return tf.keras.Model(inputs=[f_csi,f_pilot,f_csi1,f_pilot1,inp,ground_truth], outputs=out)
 
