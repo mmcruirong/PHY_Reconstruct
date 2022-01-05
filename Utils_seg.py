@@ -359,6 +359,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         accuracy.reset_states()
         #start_time = time.time()
         count = 0
+        print('epoch =',epoch)
         for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1 in test_data:
             # same as training 
             Csi_duplicate = tf.repeat(csi,40,axis=0)            
@@ -416,8 +417,10 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Average_BER = ', 1-tf.math.divide(tf.math.reduce_sum(difference),4000*48))     
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
-            if epoch == 5:
-                scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np)
+            
+            if epoch == 399:
+                print("Save mat")
+                scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np})
                 scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
 
             count = count +1
