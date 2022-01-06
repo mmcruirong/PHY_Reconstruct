@@ -19,6 +19,21 @@ def feature_extractor_csi():
     out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
     
+def feature_extractor_csi1():
+    inp = tf.keras.Input(shape=(48,2))
+    out = tf.keras.layers.Conv1D(filters=int(8*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(16*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    #out = tf.keras.layers.Flatten()(out)
+    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
+    return tf.keras.Model(inputs=inp, outputs=out)
+
 
 def feature_extractor_pilot():
     inp = tf.keras.Input(shape=(4, 2))
@@ -45,6 +60,33 @@ def feature_extractor_pilot():
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
+
+def feature_extractor_pilot1():
+    inp = tf.keras.Input(shape=(4, 2))
+    out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(128*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Flatten()(out)
+    out = tf.keras.layers.Dense(96)(out)
+    out = tf.keras.layers.Reshape([6,16])(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=int(16*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=int(8*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
+    return tf.keras.Model(inputs=inp, outputs=out)
+
 
 def generator():
     inp = tf.keras.Input(shape=(40, 48,2))#, activation='leaky_relu'
@@ -133,6 +175,19 @@ def discriminator():
     out = tf.keras.layers.Dense(40)(out)
     return tf.keras.Model(inputs=gen_out, outputs=out)
 
+def scale_dot():
+    input1 = tf.keras.Input(shape=(48,64*scale))
+    input2 = tf.keras.Input(shape=(48,64*scale))
+    input3 = tf.keras.Input(shape=(48,64*scale))
+
+    out = tf.matmul(input1, input2,transpose_b=True)
+    #csi_branch+pilot_branch
+    out = tf.math.divide(out,8*np.sqrt(scale))
+    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Softmax()(out)
+    out = tf.matmul(out, input3)
+    return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
+
 def scale_dot1():
     input1 = tf.keras.Input(shape=(48,64*scale))
     input2 = tf.keras.Input(shape=(48,64*scale))
@@ -141,21 +196,8 @@ def scale_dot1():
     out = tf.matmul(input1, input2,transpose_b=True)
     #csi_branch+pilot_branch
     out = tf.math.divide(out,8*np.sqrt(scale))
-    #out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.keras.layers.Softmax()(out)
-    out = tf.matmul(out, input3)
-    return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
-
-def scale_dot2():
-    input1 = tf.keras.Input(shape=(48,64*scale))
-    input2 = tf.keras.Input(shape=(48,64*scale))
-    input3 = tf.keras.Input(shape=(48,64*scale))
-
-    out = tf.matmul(input1, input2,transpose_b=True)
-    #csi_branch+pilot_branch
-    out = tf.math.divide(out,8*np.sqrt(scale))
-    #out = tf.keras.layers.Activation('tanh')(out)
-    out = tf.keras.layers.Softmax()(out)
+    out = tf.keras.layers.Activation('tanh')(out)
+    #out = tf.keras.layers.Softmax()(out)
     out = tf.matmul(out, input3)
     return tf.keras.Model(inputs=[input1,input2,input3], outputs=out)
 
@@ -207,6 +249,42 @@ def multiATT():
     Scale_input3_4 = tf.keras.layers.Dense(64*scale)(input3)
 
 
+    csi1 = scale_dot()([Scale_input1_1,Scale_input2_1,Scale_input3_1])
+    csi2 = scale_dot()([Scale_input1_2,Scale_input2_2,Scale_input3_2])
+    csi3 = scale_dot()([Scale_input1_3,Scale_input2_3,Scale_input3_3])
+    csi4 = scale_dot()([Scale_input1_4,Scale_input2_4,Scale_input3_4])  
+
+    csi_concate = tf.concat([csi1,csi2,csi3,csi4],2)
+    csi_out = tf.keras.layers.Dense(32*scale)(csi_concate)
+    
+    csi_out = csi_out + input3
+    csi_ATTout =  tf.keras.layers.LayerNormalization()(csi_out)
+   
+
+    return tf.keras.Model(inputs=[input1,input2,input3], outputs=csi_ATTout)
+
+def multiATT1():
+    input1 = tf.keras.Input(shape=(48,32*scale))
+    input2 = tf.keras.Input(shape=(48,32*scale))
+    input3 = tf.keras.Input(shape=(48,32*scale))
+
+    Scale_input1_1 = tf.keras.layers.Dense(64*scale)(input1)
+    Scale_input2_1 = tf.keras.layers.Dense(64*scale)(input2)
+    Scale_input3_1 = tf.keras.layers.Dense(64*scale)(input3)
+
+    Scale_input1_2 = tf.keras.layers.Dense(64*scale)(input1)
+    Scale_input2_2 = tf.keras.layers.Dense(64*scale)(input2)
+    Scale_input3_2 = tf.keras.layers.Dense(64*scale)(input3)
+
+    Scale_input1_3 = tf.keras.layers.Dense(64*scale)(input1)
+    Scale_input2_3 = tf.keras.layers.Dense(64*scale)(input2)
+    Scale_input3_3 = tf.keras.layers.Dense(64*scale)(input3)
+
+    Scale_input1_4 = tf.keras.layers.Dense(64*scale)(input1)
+    Scale_input2_4 = tf.keras.layers.Dense(64*scale)(input2)
+    Scale_input3_4 = tf.keras.layers.Dense(64*scale)(input3)
+
+
     csi1 = scale_dot1()([Scale_input1_1,Scale_input2_1,Scale_input3_1])
     csi2 = scale_dot1()([Scale_input1_2,Scale_input2_2,Scale_input3_2])
     csi3 = scale_dot1()([Scale_input1_3,Scale_input2_3,Scale_input3_3])
@@ -221,6 +299,7 @@ def multiATT():
 
     return tf.keras.Model(inputs=[input1,input2,input3], outputs=csi_ATTout)
 
+
 def CSI_Pilot_Features():
     f_csi = tf.keras.Input(shape=(48,2))
     f_pilot = tf.keras.Input(shape=(4,2))
@@ -230,8 +309,8 @@ def CSI_Pilot_Features():
     csi_branch = feature_extractor_csi()(f_csi)
     pilot_branch = feature_extractor_pilot()(f_pilot)
 
-    csi_branch1 = feature_extractor_csi()(f_csi1)
-    pilot_branch1 = feature_extractor_pilot()(f_pilot1)
+    csi_branch1 = feature_extractor_csi1()(f_csi1)
+    pilot_branch1 = feature_extractor_pilot1()(f_pilot1)
 
 
     csi_att = multiATT()([csi_branch,csi_branch,csi_branch])
@@ -259,8 +338,8 @@ def CSI_Pilot_Features():
     out1 = out_att1 + combined_att1
     out = tf.keras.layers.LayerNormalization()(out)
     out1 = tf.keras.layers.LayerNormalization()(out1)
-    out = tf.keras.layers.Dense(128)(out)
-    out1 = tf.keras.layers.Dense(128)(out1)
+    out = tf.keras.layers.Dense(64)(out)
+    out1 = tf.keras.layers.Dense(64)(out1)
 
     #csi_branch = feature_extractor_csi()(f_csi)
     #pilot_branch = feature_extractor_pilot()(f_pilot)
