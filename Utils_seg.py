@@ -212,13 +212,15 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
     #x1 = np.multiply(phy_payload_test, groundtruth_test)   #QPSK
     #x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])  #QPSK
 
-    x1 = np.multiply(phy_payload_test[:, :, :, 0], groundtruth_test[:, :, :, 0])   # This is for BPSK
-    #x1 = np.multiply(phy_payload_train[:, :, :, 0], groundtruth_train[:, :, :, 0])   # This is for BPSK
-   
+    test_data_np = np.array(tf.cast(tf.squeeze(label_test,axis = 3),tf.uint8))
+    test_data1_np = np.array(tf.cast(tf.squeeze(label1_test,axis = 3),tf.uint8))
+    test_data_np_bin = np.unpackbits(test_data_np,axis =2).astype(int)
+    test_data1_np_bin = np.unpackbits(test_data1_np,axis =2).astype(int)
+    bit_error = np.sum(np.abs(test_data_np_bin - test_data1_np_bin))/(10000*40*48*np.log2(16))
     #print('X1 shape = ',x1.shape)
     #for i in range(100):
         #print("baseline acc : ", np.mean(x1[i,:,:]>0))
-    print("Testing baseline acc : ", np.mean(x1>0))
+    print("Testing baseline acc : ", bit_error)
     #print("Training baseline acc : ", np.mean(x_train>0))
     #print("Testing baseline acc : ", np.mean(x_test>0))
 
@@ -255,7 +257,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             #generated_out = generator(phy_payload, training)
 
-            #EQ_out,features = discriminator([csi, pilot,csi1, pilot1,groundtruth]) 
+            #features,features1 = discriminator([csi, pilot,csi1, pilot1]) 
       
             generated_out = generator([csi, pilot,csi1, pilot1,phy_payload,groundtruth])
 
@@ -272,9 +274,9 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
 
             #generated_out = generator(label1,training)    
             #classficationloss = loss_crossentropy(label,generated_out)
-            #             
+            disc_loss = 0             
             #disc_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(EQ_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
-            disc_loss = 0
+            #disc_loss = loss_mse(features,features1)
             gen_loss = loss_crossentropy(tf.reshape(label,[40*48*batch_size,1]),tf.reshape(generated_out,[40*48*batch_size,Mod_order])) #+ reconstruction_loss
             #gen_loss = loss_crossentropy(label,generated_out)
             #joint_loss = disc_loss * gen_loss
@@ -283,7 +285,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #gen_loss = loss_cosine(groundtruth,generated_out)
         if training:
             gen_gradients = gen_tape.gradient(gen_loss, generator.trainable_weights)
-            #disc_gradients = disc_tape.gradient(joint_loss, discriminator.trainable_weights)
+            #disc_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_weights)
             #joint_gradients = disc_tape.gradient(joint_loss, Joint_model.trainable_weights)
             #generator_optimizer.apply_gradients(zip(joint_gradients, generator.trainable_weights))
 
