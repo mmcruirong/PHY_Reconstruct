@@ -16,7 +16,7 @@ def feature_extractor_csi():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
     
 def feature_extractor_csi1():
@@ -31,7 +31,7 @@ def feature_extractor_csi1():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 
@@ -58,7 +58,7 @@ def feature_extractor_pilot():
     out = tf.keras.layers.Conv1DTranspose(filters=int(8*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_pilot1():
@@ -84,32 +84,32 @@ def feature_extractor_pilot1():
     out = tf.keras.layers.Conv1DTranspose(filters=int(8*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dense(int(32*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 
 def CrossCNN():
-    inp = tf.keras.Input(shape=(48,32))#, activation='leaky_relu'
-    out = tf.keras.layers.Conv1D(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(inp)
+    inp = tf.keras.Input(shape=(48,128))#, activation='leaky_relu'
+    out = tf.keras.layers.Conv1D(filters=32, kernel_size=3, strides=2, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1D(filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1D(filters=64, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1D(filters=128, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1D(filters=128, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Dense(128)(out)    
     out = tf.keras.layers.Flatten()(out) # (None, 60)
     out = tf.keras.layers.Reshape((6,128))(out)
     #out = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(out)   # (None, 2, 5, 6)
-    out = tf.keras.layers.Conv1DTranspose(filters=64, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=64, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=32, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=32, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=16, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=16, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     
@@ -120,7 +120,7 @@ def CrossCNN():
     #out = out +inp
     
     #out = tf.keras.layers.Conv1D(filters=2, kernel_size=3, strides=1, padding='same', use_bias=True)(out)
-    out = tf.keras.layers.Dense(int(2*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
 
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -155,7 +155,7 @@ def CNN():
 
 
 
-
+""""
 def discriminator():   
     gen_out = tf.keras.Input(shape=(40, 48,2))
     out = tf.keras.layers.Conv2D(filters=8, kernel_size=(3,3), strides=2, padding='same', use_bias=False)(gen_out)
@@ -514,7 +514,7 @@ def CSI_Pilot_Features():
 
     return tf.keras.Model(inputs=[f_csi,f_pilot,f_csi1,f_pilot1], outputs=features)
 
-
+"""
 
 
 
@@ -545,6 +545,8 @@ def PHY_Reconstruction_AE():
     print(MultiAtt_out_csi.shape)
     
     mixed_feature = csi_branch + pilot_branch
+    print(mixed_feature.shape)
+
     features = CrossCNN()(mixed_feature)
     #features = CSI_Pilot_Features()([f_csi,f_pilot,f_csi1,f_pilot1])
     #channel_branch = tf.keras.layers.Dense(128)(features)
