@@ -228,7 +228,7 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 
 
 def NN_training(generator, discriminator, data_path, data_path1, logdir):
-    EPOCHS = 800
+    EPOCHS = 1600
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
@@ -407,7 +407,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     #print('bit_error = ', bit_error)
                     #total_bit_error = total_bit_error + bit_error
 
-            print('BER = ', bit_error)
+           
             total_bit_error = total_bit_error + bit_error
 
             #tf.print('Gen_out = ',bin(int(classification_result)).replace("0b",""))
@@ -420,11 +420,11 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            if epoch == 499:
+            if epoch == 1299:
                 #print("Save mat")
                 scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np})
                 scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
-
+                print('BER = ', bit_error)
             count = count +1
 
             #print('Total_BER = ', total_bit_error)
