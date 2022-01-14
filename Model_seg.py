@@ -149,7 +149,7 @@ def CNN():
     out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
     out = tf.keras.layers.Dropout(.35)(out)
-    out = tf.keras.layers.Dense(16,activation = 'softmax')(out)
+    out = tf.keras.layers.Dense(2,activation = 'softmax')(out)
     
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -542,16 +542,16 @@ def PHY_Reconstruction_AE():
     MultiAtt_out_pilot = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=2)(pilot_diff,pilot_diff)
     cross_attention = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=2)(MultiAtt_out_csi,MultiAtt_out_pilot)
 
-    print(MultiAtt_out_csi.shape)
+    #print(MultiAtt_out_csi.shape)
     
-    mixed_feature = csi_branch + pilot_branch
-    print(mixed_feature.shape)
+    mixed_feature =  cross_attention*phy_branch + csi_branch + pilot_branch
+    #print(mixed_feature.shape)
 
     features = CrossCNN()(mixed_feature)
     #features = CSI_Pilot_Features()([f_csi,f_pilot,f_csi1,f_pilot1])
     #channel_branch = tf.keras.layers.Dense(128)(features)
     #
-    EQ_phy =  cross_attention * phy_branch + features
+    EQ_phy =  phy_branch#  + features
 
     phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     correction = tf.keras.layers.LSTMCell(int(256*scale))

@@ -212,6 +212,8 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
     #x1 = np.multiply(phy_payload_test, groundtruth_test)   #QPSK
     #x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])  #QPSK
 
+
+
     test_data_np = np.array(tf.cast(tf.squeeze(label_test,axis = 3),tf.uint8))
     test_data1_np = np.array(tf.cast(tf.squeeze(label1_test,axis = 3),tf.uint8))
     test_data_np_bin = np.unpackbits(test_data_np,axis =2).astype(int)
@@ -232,7 +234,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 16
+    Mod_order = 2
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
@@ -364,6 +366,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         #print('epoch =',epoch)
         for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1 in test_data:
             # same as training 
+            
             Csi_duplicate = tf.repeat(csi,40,axis=0)            
             Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
             Pilot_input = tf.squeeze(tf.reshape(pilot,[40*batch_size,4,1,2]),axis = 2)
@@ -383,6 +386,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             
             classifcation_np = np.array(tf.cast(classification_result,tf.uint8))
             label_np = np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8))
+            label1_np = np.array(tf.cast(tf.squeeze(Label1_input,axis = 2),tf.uint8))
             classification_bin = np.unpackbits(classifcation_np,axis =1).astype(int)
             label_bin = np.unpackbits(label_np,axis =1).astype(int)
             bit_error = np.sum(np.abs(label_bin - classification_bin))/(batch_size*40*48*np.log2(Mod_order))
@@ -420,12 +424,19 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            if epoch == 1299:
+            if epoch == 15:
                 #print("Save mat")
                 scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np})
                 scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
                 print('BER = ', bit_error)
+
+            if epoch == 0:
+                #print("Save mat")
+                scipy.io.savemat('mat_out_origin/data%d.mat'%count, {'data_origin': label1_np})
+                scipy.io.savemat('mat_out_origin/label%d.mat'%count, {'label_origin': label_np})
+                print('BER = ', bit_error)
             count = count +1
+
 
             #print('Total_BER = ', total_bit_error)
         #print('testing_step = ', testing_step)

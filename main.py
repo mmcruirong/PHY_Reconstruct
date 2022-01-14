@@ -1,4 +1,4 @@
-from Model_seg import PHY_Reconstruction_AE,CSI_Pilot_Features#PHY_Reconstruction_Generator
+from Model_seg import PHY_Reconstruction_AE#,CSI_Pilot_Features#PHY_Reconstruction_Generator
 from Utils_seg import NN_training
 import tensorflow as tf
 if __name__ == "__main__":
@@ -15,6 +15,6 @@ if __name__ == "__main__":
             print(e)
 
     PHY_Net_gen = PHY_Reconstruction_AE()#PHY_Reconstruction_Generator()
-    PHY_Net_disc = CSI_Pilot_Features() #PHY_Reconstruction_discriminator()
-    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_16QAMSEG_0.8.npz", "PHY_dataset_BPSK_NoInter_0.8.npz", "logs")#PHY_Net_disc, 
+    PHY_Net_disc = PHY_Reconstruction_AE() #PHY_Reconstruction_discriminator()
+    NN_training(PHY_Net_gen,PHY_Net_disc, "PHY_dataset_BPSKSEGfull_0.8.npz", "PHY_dataset_BPSK_NoInter_0.8.npz", "logs")#PHY_Net_disc, 
 #PHY_dataset_PAYLOADONLYv1_0
