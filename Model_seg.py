@@ -125,7 +125,7 @@ def CrossCNN():
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def CNN():
-    inp = tf.keras.Input(shape=(48,128))#, activation='leaky_relu'
+    inp = tf.keras.Input(shape=(48,400))#, activation='leaky_relu'
     out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
@@ -551,7 +551,7 @@ def PHY_Reconstruction_AE():
     #features = CSI_Pilot_Features()([f_csi,f_pilot,f_csi1,f_pilot1])
     #channel_branch = tf.keras.layers.Dense(128)(features)
     #
-    EQ_phy =  phy_branch#  + features
+    EQ_phy =  phy_branch  + features
 
     phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     correction = tf.keras.layers.LSTMCell(int(256*scale))
@@ -559,7 +559,7 @@ def PHY_Reconstruction_AE():
     LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
 
     Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True, return_sequences=True)
-    encoder_out, state_h, state_c = tf.keras.layers.LSTM(128,return_state=True, return_sequences=True)(EQ_phy) #Reconstructioncell(EQ_out)
+    encoder_out, state_h, state_c = tf.keras.layers.LSTM(400,return_state=True, return_sequences=True)(EQ_phy) #Reconstructioncell(EQ_out)
     #out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(ground_truth)
     #out = tf.keras.layers.BatchNormalization()(out)
     #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
