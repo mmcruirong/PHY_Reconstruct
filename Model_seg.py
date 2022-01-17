@@ -34,6 +34,20 @@ def feature_extractor_csi1():
     out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
+def feature_extractor_csi_comb():
+    inp = tf.keras.Input(shape=(48,128))
+    out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(128*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    #out = tf.keras.layers.Flatten()(out)
+    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
+    return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_pilot():
     inp = tf.keras.Input(shape=(4, 2))
@@ -82,6 +96,20 @@ def feature_extractor_pilot1():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(8*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
+    return tf.keras.Model(inputs=inp, outputs=out)
+
+def feature_extractor_pilot_comb():
+    inp = tf.keras.Input(shape=(48, 128))
+    out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(128*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
@@ -533,7 +561,11 @@ def PHY_Reconstruction_AE():
     csi_branch1 = feature_extractor_csi1()(f_csi1)
     pilot_branch1 = feature_extractor_pilot1()(f_pilot1)
     
+    
+
     phy_branch = tf.keras.layers.Dense(128)(inp)
+    #groundtruth_branch = tf.keras.layers.Dense(128)(ground_truth)
+
     
     CSI_diff = csi_branch - csi_branch1
     pilot_diff = pilot_branch - pilot_branch1
@@ -543,8 +575,10 @@ def PHY_Reconstruction_AE():
     cross_attention = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=2)(MultiAtt_out_csi,MultiAtt_out_pilot)
 
     #print(MultiAtt_out_csi.shape)
-    
-    mixed_feature =  cross_attention*phy_branch + csi_branch + pilot_branch
+    csi_feature_correct = feature_extractor_csi_comb()(CSI_diff)
+    pilot_feature_correct = feature_extractor_pilot_comb()(pilot_diff)
+
+    mixed_feature =  (1-cross_attention)*phy_branch + csi_feature_correct + pilot_feature_correct 
     #print(mixed_feature.shape)
 
     features = CrossCNN()(mixed_feature)
@@ -553,12 +587,11 @@ def PHY_Reconstruction_AE():
     #
     EQ_phy =  phy_branch  + features
 
-    phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
-    correction = tf.keras.layers.LSTMCell(int(256*scale))
-    stackcell = [phy_lstm_1,correction]
-    LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
-
-    Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True, return_sequences=True)
+    #phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
+    #correction = tf.keras.layers.LSTMCell(int(256*scale))
+    #stackcell = [phy_lstm_1,correction]
+    #LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
+    #Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True, return_sequences=True)
     encoder_out, state_h, state_c = tf.keras.layers.LSTM(400,return_state=True, return_sequences=True)(EQ_phy) #Reconstructioncell(EQ_out)
     #out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(ground_truth)
     #out = tf.keras.layers.BatchNormalization()(out)
@@ -580,6 +613,7 @@ def PHY_Reconstruction_AE():
  
     
     out = CNN()(encoder_out)
+    #out = tf.keras.layers.Dense(2,activation = 'softmax')(encoder_out)  
     #out = tf.keras.layers.Dense(4,activation = 'softmax')(decoder_out)
     return tf.keras.Model(inputs=[f_csi,f_pilot,f_csi1,f_pilot1,inp,ground_truth], outputs=out)
 

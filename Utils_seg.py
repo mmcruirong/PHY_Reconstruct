@@ -60,14 +60,15 @@ def data_preprocessing_for_each_payload(data):
         #raw_payload.append((np.concatenate((raw_payload_real,raw_payload_imag),axis = 2)))    
        
         phy_payload_real = np.real(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
-        phy_payload_imag = np.imag(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
-        phy_payload.append((np.concatenate((phy_payload_real,phy_payload_imag),axis = 2)))      
-        #phy_payload.append([phy_payload_amp,phy_payload_angle])
+        phy_payload_imag = np.imag(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')   
+        phy_payload.append((np.concatenate((phy_payload_real,phy_payload_imag),axis = 2)))
+        
+              
         #groundtruth.append(np.transpose(mapping[np.intc(Groundtruth[i_sample][0])]).reshape(40, 48, 1))
-        groundtruth_real = np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F')
-        groundtruth_imag = np.imag(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
-        #groundtruth_real = np.divide(np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F'),0.707)  #this is only for BPSK
-        #groundtruth_imag = np.zeros((40, 48,1)) # This is only for BPSK
+        #groundtruth_real = np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
+        #groundtruth_imag = np.imag(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
+        groundtruth_real = np.divide(np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F'),0.707)  #this is only for BPSK
+        groundtruth_imag = np.zeros((40, 48,1)) # This is only for BPSK
         groundtruth.append((np.concatenate((groundtruth_real,groundtruth_imag),axis = 2)))
 
         label.append(Label[i_sample][0].reshape(40,48,1, order='F'))
@@ -127,7 +128,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER[test_indices, :, :]))
     print('SER =', np.mean(SER[test_indices, :, :]))
 
-    np.savez_compressed("PHY_dataset_BPSK_NoInter_" + str(split), 
+    np.savez_compressed("PHY_dataset_BPSKSEGANG_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -428,13 +429,13 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                 #print("Save mat")
                 scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np})
                 scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
-                print('BER = ', bit_error)
+                #print('BER = ', bit_error)
 
             if epoch == 0:
                 #print("Save mat")
                 scipy.io.savemat('mat_out_origin/data%d.mat'%count, {'data_origin': label1_np})
                 scipy.io.savemat('mat_out_origin/label%d.mat'%count, {'label_origin': label_np})
-                print('BER = ', bit_error)
+                #print('BER = ', bit_error)
             count = count +1
 
 
@@ -460,4 +461,4 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             
 
 if __name__ == "__main__":
-    get_processed_dataset("BPSK_NoInter")
+    get_processed_dataset("BPSK")
