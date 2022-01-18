@@ -62,8 +62,8 @@ def data_preprocessing_for_each_payload(data):
         phy_payload_real = np.real(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
         phy_payload_imag = np.imag(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')   
         phy_payload.append((np.concatenate((phy_payload_real,phy_payload_imag),axis = 2)))
-        
-              
+
+
         #groundtruth.append(np.transpose(mapping[np.intc(Groundtruth[i_sample][0])]).reshape(40, 48, 1))
         #groundtruth_real = np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
         #groundtruth_imag = np.imag(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
@@ -128,7 +128,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER[test_indices, :, :]))
     print('SER =', np.mean(SER[test_indices, :, :]))
 
-    np.savez_compressed("PHY_dataset_BPSKSEGANG_" + str(split), 
+    np.savez_compressed("PHY_dataset_16QAMSEG_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -235,7 +235,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 2
+    Mod_order = 4
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
@@ -425,7 +425,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            if epoch == 15:
+            if epoch == 45:
                 #print("Save mat")
                 scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np})
                 scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
@@ -461,4 +461,4 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             
 
 if __name__ == "__main__":
-    get_processed_dataset("BPSK")
+    get_processed_dataset("16QAM")
