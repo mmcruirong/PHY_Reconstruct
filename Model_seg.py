@@ -570,22 +570,21 @@ def PHY_Reconstruction_AE():
     CSI_diff = csi_branch - csi_branch1
     pilot_diff = pilot_branch - pilot_branch1
 
-    #MultiAtt_out_csi = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(CSI_diff,CSI_diff)
-    #MultiAtt_out_pilot = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(pilot_diff,pilot_diff)
-    #cross_attention = MultiAtt_out_csi * MultiAtt_out_pilot  #tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=2)(MultiAtt_out_csi,MultiAtt_out_pilot)
+    MultiAtt_out_csi = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(CSI_diff,CSI_diff)
+    MultiAtt_out_pilot = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(pilot_diff,pilot_diff)
+    cross_attention = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=2)(MultiAtt_out_csi,MultiAtt_out_pilot)
     #cross_attention=  tf.keras.layers.LayerNormalization()(cross_attention)
     #print('Attentionshape =', MultiAtt_out_csi.shape)
     csi_feature_correct = feature_extractor_csi_comb()(CSI_diff)
     pilot_feature_correct = feature_extractor_pilot_comb()(pilot_diff)
 
-    mixed_feature =   csi_feature_correct + pilot_feature_correct #(1-cross_attention)*phy_branch
     #print(mixed_feature.shape)
 
     #features = CrossCNN()(mixed_feature)
     #features = CSI_Pilot_Features()([f_csi,f_pilot,f_csi1,f_pilot1])
     #channel_branch = tf.keras.layers.Dense(128)(features)
     #
-    EQ_phy =  phy_branch  + mixed_feature
+    EQ_phy =  phy_branch - cross_attention -  csi_feature_correct - pilot_feature_correct #mixed_feature
 
     #phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     #correction = tf.keras.layers.LSTMCell(int(256*scale))
