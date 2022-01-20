@@ -11,6 +11,8 @@ error_table_64 = zeros(64,1);
 error_table_t = zeros(40,1);
 fft_pilot_sum = zeros(64,40);
 CSI_threshold = 0;
+Reorganized_CSI_sum = zeros(1,48);
+count=0;
 for i = 1:5000
     error_mat = zeros(1920,1);
     CSI = data_set.CSI{i,1};  
@@ -33,21 +35,30 @@ for i = 1:5000
     
     error_mat(a,1)= 1;
     error_mat_reshape = reshape(error_mat,48,40);
-    angleCSI = angle(CSI);
+    angleCSI = rad2deg(angle(CSI));
+
     phase_diff = zeros(48,1);
     phase_diff(48,1) = angleCSI(1,48);
     for j = 2:48
         phase_diff(j-1,1) = abs(angleCSI(j)-angleCSI(j-1));
     end
-%     figure(i)
-%     
-%     bar(x,error_table);
-%     hold on
-%     plot(x,abs(phase_diff));
+    flip_loc = find(phase_diff>300);    
+    if isempty(flip_loc)
+        count = count +1;
+        continue
+    end
     
+    reorganized_csi = circshift(angleCSI,-(max(flip_loc)));
+%     figure(i)
+%     plot(x,reorganized_csi);
+%     figure(i+200)
+%     plot(x,abs(phase_diff));
+    %hold on
+    %plot(x,abs(phase_diff));
+    Reorganized_CSI_sum = Reorganized_CSI_sum + reorganized_csi;
     valid_phase_diff = find(phase_diff<3);
     CSI_threshold = CSI_threshold + mean(phase_diff(valid_phase_diff));
-    fft_pilot = abs(fftshift(fft(Pilot.',64)));
+    fft_pilot = fft(Pilot.',64);
     fft_pilot_sum = fft_pilot + fft_pilot_sum;
     cwt_csi = cwt(abs(CSI));    
     %figure(i+1)
@@ -66,9 +77,10 @@ for i = 1:5000
    %figure(i+3)
    %imagesc(abs(cwt_csi(:,:,2)));
 end
-fft_pilot_mean = fft_pilot_sum/5000;
-CSI_threshold_mean = CSI_threshold/5000;
-load('/home/labuser/payload_reconstruction/16QAM/payload_1.mat')
+fft_pilot_mean = fft_pilot_sum/(5000-count);
+CSI_threshold_mean = CSI_threshold/(5000-count);
+Reorganized_CSI_mean = Reorganized_CSI_sum/(5000-count);
+load('/home/labuser/payload_reconstruction/BPSK_full/payload_1.mat')
 
 error_table_intf = zeros(48,1);
 error_table_64_intf = zeros(64,1);
@@ -88,6 +100,7 @@ for i = 1:5000
     Tx_data_intf = data_set.Tx_dec{i,1};
     Rx_data_intf = data_set.Rx_dec{i,1};
     [a_intf,b1_intf] = find(Tx_data_intf ~= Rx_data_intf);
+
     error_sub_intf = mod(a_intf,48);
     error_t_intf = floor(a_intf/48);
     
@@ -103,23 +116,63 @@ for i = 1:5000
     
     error_mat_intf(a_intf,1)= 1;
     error_mat_reshape_intf = reshape(error_mat_intf,48,40);
-    angleCSI_intf = angle(CSI_intf);
+   
+    angleCSI_intf = rad2deg(angle(CSI_intf));
+    
+    
     phase_diff_intf = zeros(48,1);
     phase_diff_intf(48,1) = angleCSI_intf(1,48);
     for j = 2:48
-        phase_diff_intf(j-1,1) = abs(angleCSI_intf(j)-angleCSI_intf(j-1));
+       phase_diff_intf(j-1,1) = abs(angleCSI_intf(j)-angleCSI_intf(j-1));
     end
-    
+    flip_loc_intf = find(phase_diff_intf>300);
     CSI_intefered = phase_diff_intf;
     CSI_indicator = find(CSI_intefered>(CSI_threshold_mean*2));
-   % figure(i)
+
+
+%     
+%     bar(x,error_table_intf);
+%     hold on
+%     plot(x,abs(phase_diff_intf));
+%    
+    fft_pilot_intf = fft(Pilot_intf.',64);
+    pilot_diff = angle(fft_pilot_intf) - angle(fft_pilot_mean);
     
-    %bar(x,error_table_intf);
-    %hold on
-    %plot(x,abs(phase_diff_intf));
-   
-    fft_pilot_intf = abs(fftshift(fft(Pilot_intf.',64)));
-    cwt_csi_intf = cwt(abs(CSI_intf));    
+    
+    phase_diff_pilot_intf = pilot_diff(data_ind,:);
+    
+    if isempty(flip_loc_intf)
+        continue
+    end
+    reorganized_csi_intf = circshift(angleCSI_intf,-(max(flip_loc_intf)));
+    reorganized_pilot_intf = circshift(phase_diff_pilot_intf,-(max(flip_loc_intf)));
+
+%     figure(i)
+%     plot(x,circshift(angleCSI_intf,-(max(flip_loc_intf))));
+    csi_diff = deg2rad(reorganized_csi_intf).' - deg2rad(Reorganized_CSI_mean).';
+    phase_diff = -0.2*reorganized_pilot_intf +0.8*csi_diff;
+    
+    Tx_constellation = data_set.Txpayload{i,1};
+    Rx_constellation = data_set.Constallation{i,1};
+    constellation_diff = circshift(reshape(Tx_constellation,48,40),-(max(flip_loc_intf)),1) - circshift(reshape(Rx_constellation,48,40),-(max(flip_loc_intf)),1);
+ 
+    [a_intf1,b1_intf1] = find(circshift(reshape(Tx_data_intf,48,40),-(max(flip_loc_intf)),1) ~= circshift(reshape(Rx_data_intf,48,40),-(max(flip_loc_intf)),1));
+    error_constellation = zeros(48,40);
+    error_constellation_compute = zeros(48,40);
+    error_constellation(a_intf1,b1_intf1) = abs(angle(constellation_diff(a_intf1,b1_intf1)));
+    error_constellation_compute(a_intf1,b1_intf1) =  abs(phase_diff(a_intf1,b1_intf1));
+    
+    phase_subtract = reshape(abs(error_constellation_compute -error_constellation),[],1);
+    distribution = find(phase_subtract~=0);
+    
+    pd = fitdist(phase_subtract(distribution),'Normal');
+    x_values = 0:0.1:6;
+    y = pdf(pd,x_values);
+    figure(i+1)
+    plot(x_values,smooth(y));
+    title('PDF of phase difference')
+    txt = ['Probablity=',num2str(trapz(x_values(1:17),y(1:17)))];
+    text(4,0.3,txt)
     %figure(i+1)
     %plot(x_p,angle(Pilot)+10);
     difference_mat = abs(fft_pilot_mean(data_ind,:))/max(max(abs(fft_pilot_mean(data_ind,:))))-abs(fft_pilot_intf(data_ind,:))/max(max(abs(fft_pilot_intf(data_ind,:))));

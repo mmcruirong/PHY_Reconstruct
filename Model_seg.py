@@ -164,15 +164,19 @@ def CNN():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(1536)(out)
-    out = tf.keras.layers.Reshape([12,128])(out)
+    out = tf.keras.layers.Dense(768)(out)
+    #mu, rho = tf.split(out, num_or_size_splits=2, axis=1)
+    #sd = tf.math.log(1+tf.math.exp(rho))    
+    #encoder_out = mu + sd * tf.random.normal([6*128], 0, 1, tf.float32)
+    #decoder_inp = tf.keras.layers.Dense(6*128,activation = None)(encoder_out)
+    out = tf.keras.layers.Reshape([6,128])(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(128*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(64*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
@@ -570,21 +574,21 @@ def PHY_Reconstruction_AE():
     CSI_diff = csi_branch - csi_branch1
     pilot_diff = pilot_branch - pilot_branch1
 
-    MultiAtt_out_csi = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(CSI_diff,CSI_diff)
-    MultiAtt_out_pilot = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(pilot_diff,pilot_diff)
-    cross_attention = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=2)(MultiAtt_out_csi,MultiAtt_out_pilot)
+    #MultiAtt_out_csi = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(CSI_diff,CSI_diff)
+    #MultiAtt_out_pilot = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(pilot_diff,pilot_diff)
+    #cross_attention = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=2)(MultiAtt_out_csi,MultiAtt_out_pilot)
     #cross_attention=  tf.keras.layers.LayerNormalization()(cross_attention)
     #print('Attentionshape =', MultiAtt_out_csi.shape)
     csi_feature_correct = feature_extractor_csi_comb()(CSI_diff)
     pilot_feature_correct = feature_extractor_pilot_comb()(pilot_diff)
 
     #print(mixed_feature.shape)
-
+    #- cross_attention
     #features = CrossCNN()(mixed_feature)
     #features = CSI_Pilot_Features()([f_csi,f_pilot,f_csi1,f_pilot1])
     #channel_branch = tf.keras.layers.Dense(128)(features)
     #
-    EQ_phy =  phy_branch - cross_attention -  csi_feature_correct - pilot_feature_correct #mixed_feature
+    EQ_phy =  phy_branch  -  csi_feature_correct - pilot_feature_correct #mixed_feature
 
     #phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     #correction = tf.keras.layers.LSTMCell(int(256*scale))
@@ -608,134 +612,12 @@ def PHY_Reconstruction_AE():
     #decoder_lstm = tf.keras.layers.LSTM(64,return_state=True, return_sequences=True)
     #decoder_out,_,_, = decoder_lstm(decoder_inp,initial_state=[state_h, state_c])
 
-    print('EQ_out_shape', phy_branch.shape)
+   
  
     
-    out = CNN()(encoder_out)
+    out = CNN()(encoder_out) 
+    print('Out_shape', out.shape)
     #out = tf.keras.layers.Dense(2,activation = 'softmax')(encoder_out)  
     #out = tf.keras.layers.Dense(4,activation = 'softmax')(decoder_out)
     return tf.keras.Model(inputs=[f_csi,f_pilot,f_csi1,f_pilot1,inp,ground_truth], outputs=out)
 
-class CVAE(tf.keras.Model):
-
-    def __init__(self):
-        super(CVAE, self).__init__()
-        self.encoder = tf.keras.Sequential(
-            [
-                tf.keras.layers.InputLayer(input_shape=(40, 48, 2)),
-                tf.keras.layers.Conv2D(
-                    filters=32, kernel_size=3, strides=(2, 2), activation='relu'),
-                tf.keras.layers.Conv2D(
-                    filters=64, kernel_size=3, strides=(2, 2), activation='relu'),
-                tf.keras.layers.Conv2D(
-                    filters=64, kernel_size=3, strides=(2, 2), activation='relu'),
-                tf.keras.layers.Flatten(),
-                # No activation
-                tf.keras.layers.Dense(10 + 10),
-            ]
-        )
-
-        self.decoder = tf.keras.Sequential(
-            [
-                tf.keras.layers.InputLayer(input_shape=(10,)),
-                tf.keras.layers.Dense(units=5*6*32, activation=tf.nn.relu),
-                tf.keras.layers.Reshape(target_shape=(5, 6, 32)),
-                tf.keras.layers.Conv2DTranspose(
-                    filters=64, kernel_size=3, strides=2, padding='same',
-                    activation='relu'),
-                tf.keras.layers.Conv2DTranspose(
-                    filters=32, kernel_size=3, strides=2, padding='same',
-                    activation='relu'),
-                tf.keras.layers.Conv2DTranspose(
-                    filters=16, kernel_size=3, strides=2, padding='same',
-                    activation='relu'),
-                tf.keras.layers.Conv2DTranspose(
-                    filters=4, kernel_size=3, strides=1, padding='same'),
-            ]
-        )
-
-    @tf.function
-    def sample(self, eps=None):
-        if eps is None:
-            eps = tf.random.normal(shape=(100, self.latent_dim))
-        return self.decode(eps, apply_sigmoid=True)
-
-    def encode(self, x):
-        mean, logvar = tf.split(self.encoder(x), num_or_size_splits=2, axis=1)
-        return mean, logvar
-
-    def reparameterize(self, mean, logvar):
-        eps = tf.random.normal(shape=mean.shape)
-        return eps * tf.exp(logvar * .5) + mean
-
-    def decode(self, z, apply_sigmoid=False):
-        logits = self.decoder(z)
-        if apply_sigmoid:
-            probs = tf.sigmoid(logits)
-            return probs
-        return logits
-    def log_normal_pdf(sample, mean, logvar, raxis=1):
-        log2pi = tf.math.log(2. * np.pi)
-        return tf.reduce_sum(
-            -.5 * ((sample - mean) ** 2. * tf.exp(-logvar) + logvar + log2pi),
-            axis=raxis)
-    
-    def call(self, PHY_Payload):
-        mean, logvar = self.encode(PHY_Payload)
-        z = self.reparameterize(mean, logvar)
-        x_logit = self.decode(z,apply_sigmoid=True)
-        #cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
-        #logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-        #logpz = log_normal_pdf(z, 0., 0.)
-        #logqz_x = log_normal_pdf(z, mean, logvar)
-        return x_logit
-
-class PHY_Reconstruction_Generator(tf.keras.Model):
-    def __init__(self):
-        super(PHY_Reconstruction_Generator, self).__init__()  
-        self.csi_branch = feature_extractor_csi()
-        self.pilot_branch = feature_extractor_pilot()           
-        self.phy_generator = generator()
-        self.phy_lstm = tf.keras.layers.LSTM(1, return_sequences=True) # (40, 48)    
-        #self.activation = tf.keras.layers.Activation('sigmoid')
-      
-        #self.PHY_payload_branch = discriminator()
-    def call(self,csi, pilot, PHY_Payload, training=False):#, CSI, Pilot, Freq, 
-       
-        #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
-        '''PHY_Payload_Real = PHY_Payload[:,:,:,0]
-        PHY_Payload_IMAG = PHY_Payload[:,:,:,1]
-        whole_seq_output_real = self.phy_lstm(PHY_Payload_Real)
-        whole_seq_output_imag = self.phy_lstm(PHY_Payload_IMAG)
-        LSTM_PHY_Payload = tf.stack([whole_seq_output_real,whole_seq_output_imag],3)
-        phy_payload_generator = self.phy_generator(LSTM_PHY_Payload, training=training)   
-        #LSTM_PHY_Payload     
-        joint_features = self.concat_layer([csi_features, pilot_features])
-        joint_features = self.fusion_layer_1(joint_features)
-        joint_features = self.fusion_layer_2(joint_features)
-        estimation_correction = self.DeConv_net_2(joint_features)        
-        out = phy_payload_generator * estimation_correction +  PHY_Payload'''  
-        
-        #LSTM_PHY_Payload = self.phy_lstm(PHY_Payload, training=training)
-        #LSTM_PHY_Payload = tf.stack([whole_seq_output_real,whole_seq_output_imag],2)
-        out = self.phy_generator(PHY_Payload, training=training)    
-        #LSTM_PHY_Payload    
-        #out = self.phy_generator(out, training=training)     
-        #out =  self.activation(out)
-        #out = self_correction    * estimation_correction  
-        return out
-
-class PHY_Reconstruction_discriminator(tf.keras.Model):
-    def __init__(self):
-        super(PHY_Reconstruction_discriminator, self).__init__()
-        self.phy_discriminator = discriminator()
-        self.phy_lstm = tf.keras.layers.LSTM(4, return_sequences=True) # (None, 40, 48)
-    def call(self, PHY_Payload, training=False):
-        #PHY_Payload = PHY_Payload / tf.constant(3.1415926/4)
-        #PHY_Payload_Real = PHY_Payload
-        #PHY_Payload_IMAG = PHY_Payload[:,:,1]
-        #whole_seq_output_real = self.phy_lstm(PHY_Payload_Real)
-        #LSTM_PHY_Payload = self.phy_lstm(PHY_Payload)
-        #LSTM_PHY_Payload = tf.stack([whole_seq_output_real,whole_seq_output_imag],2) #LSTM_PHY_Payload
-        phy_payload_discriminator = self.phy_discriminator(PHY_Payload, training=training)     
-        return phy_payload_discriminator

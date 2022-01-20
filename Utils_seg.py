@@ -382,6 +382,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             testing_step += 1
             generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input,Csi_input1, Pilot_input1, training=False)
             #tf.print('Gen_out = ',generated_out[1,1,:])
+            
             classification_result = tf.math.argmax(generated_out,axis = 2)
             #tf.print('Gen_out = ',classification_result)
             
@@ -425,7 +426,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            if epoch == 45:
+            if epoch == 599:
                 #print("Save mat")
                 scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np})
                 scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
@@ -448,15 +449,15 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)
 
-                    #if batch_accuracy.result() > best_validation_acc:
-                        #best_validation_acc = batch_accuracy.result()
-                        #generator.save_weights(os.path.join('saved_models', runid + '.tf'))
+                    if epoch == 799:
+                        generator.save_weights(os.path.join('saved_models', runid + '.tf'))
                     G_loss.reset_states()       
                     D_loss.reset_states()                                 
                     accuracy.reset_states()
                     #tf.print(tf.math.reduce_max(testing_accuracy))
                     testing_accuracy = 0
                     total_bit_error = 0
+            
         #print('Inferencing time for 10k frames:', time.time() - start_time)
             
 
