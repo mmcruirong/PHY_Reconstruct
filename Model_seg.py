@@ -16,7 +16,7 @@ def feature_extractor_csi():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(144*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
     
 def feature_extractor_csi1():
@@ -31,11 +31,11 @@ def feature_extractor_csi1():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(144*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_csi_comb():
-    inp = tf.keras.Input(shape=(48,128))
+    inp = tf.keras.Input(shape=(48,144))
     out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -46,7 +46,7 @@ def feature_extractor_csi_comb():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     #out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(144*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_pilot():
@@ -72,7 +72,7 @@ def feature_extractor_pilot():
     out = tf.keras.layers.Conv1DTranspose(filters=int(8*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(144*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_pilot1():
@@ -98,11 +98,11 @@ def feature_extractor_pilot1():
     out = tf.keras.layers.Conv1DTranspose(filters=int(8*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(144*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_pilot_comb():
-    inp = tf.keras.Input(shape=(48, 128))
+    inp = tf.keras.Input(shape=(48, 144))
     out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -112,44 +112,23 @@ def feature_extractor_pilot_comb():
     out = tf.keras.layers.Conv1D(filters=int(128*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
+    out = tf.keras.layers.Dense(int(144*scale),activation = 'tanh')(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 
 def CrossCNN():
-    inp = tf.keras.Input(shape=(48,128))#, activation='leaky_relu'
-    out = tf.keras.layers.Conv1D(filters=32, kernel_size=3, strides=2, padding='same', use_bias=False)(inp)
+    inp = tf.keras.Input(shape=(48,512))#, activation='leaky_relu'
+    out = tf.keras.layers.Conv1D(filters=128, kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1D(filters=64, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1D(filters=256, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1D(filters=128, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1D(filters=512, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Dense(128)(out)    
-    out = tf.keras.layers.Flatten()(out) # (None, 60)
-    out = tf.keras.layers.Reshape((6,128))(out)
-    #out = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(out)   # (None, 2, 5, 6)
-    out = tf.keras.layers.Conv1DTranspose(filters=64, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=32, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=16, kernel_size=3, strides=2, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Dense(256)(out)
     
-    #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)    
-    #out = tf.keras.layers.Conv2D(filters=2, kernel_size = (3,3), strides=1, padding='same', use_bias=True)(out)
-    #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    #out = tf.keras.layers.Reshape((1920,1,2))(out)
-    #out = out +inp
-    
-    #out = tf.keras.layers.Conv1D(filters=2, kernel_size=3, strides=1, padding='same', use_bias=True)(out)
-    out = tf.keras.layers.Dense(int(128*scale),activation = 'tanh')(out)
-
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def CNN():
@@ -164,19 +143,19 @@ def CNN():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(768)(out)
+    out = tf.keras.layers.Dense(1536)(out)
     #mu, rho = tf.split(out, num_or_size_splits=2, axis=1)
     #sd = tf.math.log(1+tf.math.exp(rho))    
     #encoder_out = mu + sd * tf.random.normal([6*128], 0, 1, tf.float32)
     #decoder_inp = tf.keras.layers.Dense(6*128,activation = None)(encoder_out)
-    out = tf.keras.layers.Reshape([6,128])(out)
+    out = tf.keras.layers.Reshape([12,128])(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(128*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(64*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
@@ -567,7 +546,7 @@ def PHY_Reconstruction_AE():
     
     
 
-    phy_branch = tf.keras.layers.Dense(128)(inp)
+    phy_branch = tf.keras.layers.Dense(144)(inp)
     #groundtruth_branch = tf.keras.layers.Dense(128)(ground_truth)
 
     
@@ -576,20 +555,31 @@ def PHY_Reconstruction_AE():
 
     #MultiAtt_out_csi = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(CSI_diff,CSI_diff)
     #MultiAtt_out_pilot = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(pilot_diff,pilot_diff)
-    #cross_attention = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=2)(MultiAtt_out_csi,MultiAtt_out_pilot)
-    #cross_attention=  tf.keras.layers.LayerNormalization()(cross_attention)
+    cross_attention = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(CSI_diff,pilot_diff)
+    cross_attention=  tf.keras.layers.LayerNormalization()(cross_attention)
     #print('Attentionshape =', MultiAtt_out_csi.shape)
     csi_feature_correct = feature_extractor_csi_comb()(CSI_diff)
     pilot_feature_correct = feature_extractor_pilot_comb()(pilot_diff)
 
     #print(mixed_feature.shape)
-    #- cross_attention
+    #
     #features = CrossCNN()(mixed_feature)
     #features = CSI_Pilot_Features()([f_csi,f_pilot,f_csi1,f_pilot1])
-    #channel_branch = tf.keras.layers.Dense(128)(features)
+    channel_branch = tf.keras.layers.Dense(144)(cross_attention)
     #
-    EQ_phy =  phy_branch  -  csi_feature_correct - pilot_feature_correct #mixed_feature
+    #EQ_phy =  phy_branch - cross_attention -  csi_feature_correct - pilot_feature_correct #mixed_feature
+    #features = tf.concat([phy_branch,cross_attention,csi_feature_correct,pilot_feature_correct],2)
+    EQ_phy1 = tf.nn.convolution(phy_branch, channel_branch, strides=1, padding='SAME')
+    EQ_phy2 = tf.nn.convolution(phy_branch, csi_feature_correct, strides=1, padding='SAME')
+    EQ_phy3 = tf.nn.convolution(phy_branch, pilot_feature_correct, strides=1, padding='SAME')
+    EQ_phy = EQ_phy1 + EQ_phy2 +EQ_phy3
+    print('EQ_phy', EQ_phy.shape)
+    #y = tf.nn.convolution(input_data, filter_data, strides=[1, 1], padding='SAME')
 
+    #EQ_phy = tf.keras.layers.Dense(128)(features)
+    
+    #EQ_phy = CrossCNN()(features)
+    #print('Out_shape', features.shape)
     #phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
     #correction = tf.keras.layers.LSTMCell(int(256*scale))
     #stackcell = [phy_lstm_1,correction]
@@ -611,12 +601,8 @@ def PHY_Reconstruction_AE():
     #decoder_inp = encoder_out + out
     #decoder_lstm = tf.keras.layers.LSTM(64,return_state=True, return_sequences=True)
     #decoder_out,_,_, = decoder_lstm(decoder_inp,initial_state=[state_h, state_c])
-
-   
- 
-    
+    #print('encoder_out', encoder_out.shape)
     out = CNN()(encoder_out) 
-    print('Out_shape', out.shape)
     #out = tf.keras.layers.Dense(2,activation = 'softmax')(encoder_out)  
     #out = tf.keras.layers.Dense(4,activation = 'softmax')(decoder_out)
     return tf.keras.Model(inputs=[f_csi,f_pilot,f_csi1,f_pilot1,inp,ground_truth], outputs=out)

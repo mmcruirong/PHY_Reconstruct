@@ -426,7 +426,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            if epoch == 599:
+            if epoch == 1499:
                 #print("Save mat")
                 scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np})
                 scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
