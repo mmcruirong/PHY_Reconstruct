@@ -235,7 +235,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 4
+    Mod_order = 16
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
