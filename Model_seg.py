@@ -35,7 +35,7 @@ def feature_extractor_csi1():
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_csi_comb():
-    inp = tf.keras.Input(shape=(48,128))
+    inp = tf.keras.Input(shape=(48,128*scale))
     out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -61,8 +61,8 @@ def feature_extractor_pilot():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(96)(out)
-    out = tf.keras.layers.Reshape([6,16])(out)
+    out = tf.keras.layers.Dense(96*scale)(out)
+    out = tf.keras.layers.Reshape([6,16*scale])(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -87,8 +87,8 @@ def feature_extractor_pilot1():
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Flatten()(out)
-    out = tf.keras.layers.Dense(96)(out)
-    out = tf.keras.layers.Reshape([6,16])(out)
+    out = tf.keras.layers.Dense(96*scale)(out)
+    out = tf.keras.layers.Reshape([6,16*scale])(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -102,7 +102,7 @@ def feature_extractor_pilot1():
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_pilot_comb():
-    inp = tf.keras.Input(shape=(48, 128))
+    inp = tf.keras.Input(shape=(48, 128*scale))
     out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -160,7 +160,7 @@ def CNN():
     out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
     #out = tf.keras.layers.Dropout(.15)(out)
-    out = tf.keras.layers.Dense(16,activation = 'softmax')(out)
+    out = tf.keras.layers.Dense(4,activation = 'softmax')(out)
     
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -546,7 +546,7 @@ def PHY_Reconstruction_AE():
     
     
 
-    phy_branch = tf.keras.layers.Dense(128)(inp)
+    phy_branch = tf.keras.layers.Dense(128*scale)(inp)
     #groundtruth_branch = tf.keras.layers.Dense(128)(ground_truth)
 
     

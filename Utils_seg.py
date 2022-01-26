@@ -235,7 +235,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 16
+    Mod_order = 4
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
@@ -427,16 +427,39 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             testing_accuracy = accuracy.result() + testing_accuracy
             
             if epoch == 1499:
-                #print("Save mat")
-                scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np})
-                scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
-                #print('BER = ', bit_error)
-
+                if Mod_order == 2:
+                    #print("Save mat")
+                    scipy.io.savemat('MAT_OUT_BPSK/data%d.mat'%count, {'data': classifcation_np})
+                    scipy.io.savemat('MAT_OUT_BPSK/label%d.mat'%count, {'label': label_np})
+                    #print('BER = ', bit_error)
+                elif Mod_order == 4:
+                    #print("Save mat")
+                    scipy.io.savemat('mat_outputs/data%d.mat'%count, {'data': classifcation_np})
+                    scipy.io.savemat('mat_outputs/label%d.mat'%count, {'label': label_np})
+                    #print('BER = ', bit_error)
+                elif Mod_order == 16:
+                    #print("Save mat")
+                    scipy.io.savemat('MAT_OUT_16QAM/data%d.mat'%count, {'data': classifcation_np})
+                    scipy.io.savemat('MAT_OUT_16QAM/label%d.mat'%count, {'label': label_np})
+                    #print('BER = ', bit_error)
+            
             if epoch == 0:
-                #print("Save mat")
-                scipy.io.savemat('mat_out_origin/data%d.mat'%count, {'data_origin': label1_np})
-                scipy.io.savemat('mat_out_origin/label%d.mat'%count, {'label_origin': label_np})
-                #print('BER = ', bit_error)
+                if Mod_order == 2:
+                    #print("Save mat")
+                    scipy.io.savemat('MAT_OUT_BPSK_Origin/data%d.mat'%count, {'data_origin': label1_np})
+                    scipy.io.savemat('MAT_OUT_BPSK_Origin/label%d.mat'%count, {'label_origin': label_np})
+                    #print('BER = ', bit_error)
+                elif Mod_order == 4:
+                    #print("Save mat")
+                    scipy.io.savemat('mat_out_origin/data%d.mat'%count, {'data_origin': label1_np})
+                    scipy.io.savemat('mat_out_origin/label%d.mat'%count, {'label_origin': label_np})
+                    #print('BER = ', bit_error)
+                elif Mod_order == 16:
+                    #print("Save mat")
+                    scipy.io.savemat('MAT_OUT_16QAM_Origin/data%d.mat'%count, {'data_origin': label1_np})
+                    scipy.io.savemat('MAT_OUT_16QAM_Origin/label%d.mat'%count, {'label_origin': label_np})
+                    #print('BER = ', bit_error)
+            
             count = count +1
 
 
@@ -459,7 +482,11 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     total_bit_error = 0
             
         #print('Inferencing time for 10k frames:', time.time() - start_time)
-            
+def NN_Testing(generator, testing_data_path):
+    testing_model = generator()
+    testing_model.load_weights('saved_models/')
+
+
 
 if __name__ == "__main__":
     get_processed_dataset("16QAM")
