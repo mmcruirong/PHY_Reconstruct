@@ -128,7 +128,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER[test_indices, :, :]))
     print('SER =', np.mean(SER[test_indices, :, :]))
 
-    np.savez_compressed("PHY_dataset_16QAMSEG_" + str(split), 
+    np.savez_compressed("PHY_dataset_QPSKSEGfull_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -472,8 +472,8 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)
 
-                    if epoch == 799:
-                        generator.save_weights(os.path.join('saved_models', runid + '.tf'))
+                    if epoch == 1:
+                        generator.save_weights(os.path.join('saved_models/QPSK', runid + '.tf'))
                     G_loss.reset_states()       
                     D_loss.reset_states()                                 
                     accuracy.reset_states()
@@ -482,11 +482,11 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     total_bit_error = 0
             
         #print('Inferencing time for 10k frames:', time.time() - start_time)
-def NN_Testing(generator, testing_data_path):
-    testing_model = generator()
-    testing_model.load_weights('saved_models/')
+#def NN_Testing(generator, testing_data_path):
+    #testing_model = generator()
+    #testing_model.load_weights('saved_models/')
 
 
 
 if __name__ == "__main__":
-    get_processed_dataset("16QAM")
+    get_processed_dataset("QPSK_full")
