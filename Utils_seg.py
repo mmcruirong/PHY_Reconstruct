@@ -174,29 +174,37 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         label_test = data['label_test'].astype(np.float32)
         label1_test = data['label1_test'].astype(np.float32)
 
-        #csi_test = csi_test[1000:1100,:,:,:]        
-        #pilot_test = pilot_test[1000:1100,:,:,:] 
-        #phy_payload_test = phy_payload_test[1000:1100,:,:,:] 
-        #groundtruth_test = groundtruth_test[1000:1100,:,:,:]
-        #label_test = label_test[1000:1100,:,:,:]
-        #label1_test = label1_test[1000:1100,:,:,:]
+        #csi_test = csi_test[1000:2000,:,:,:]        
+        #pilot_test = pilot_test[1000:2000,:,:,:] 
+        #phy_payload_test = phy_payload_test[1000:2000,:,:,:] 
+        #groundtruth_test = groundtruth_test[1000:2000,:,:,:]
+        #label_test = label_test[1000:2000,:,:,:]
+        #label1_test = label1_test[1000:2000,:,:,:]
 
 
     with np.load(path1) as data:
         csi_train1 = data['csi_train'].astype(np.float32)
         pilot_train1 = data['pilot_train'].astype(np.float32)        
-        phy_payload_train1 = data['phy_payload_train'].astype(np.float32)
-        groundtruth_train1 = data['groundtruth_train'].astype(np.float32)
-        label_train1 = data['label_train'].astype(np.float32)
-        label1_train1 = data['label1_train'].astype(np.float32)
+        #phy_payload_train1 = data['phy_payload_train'].astype(np.float32)
+        #groundtruth_train1 = data['groundtruth_train'].astype(np.float32)
+        #label_train1 = data['label_train'].astype(np.float32)
+        #label1_train1 = data['label1_train'].astype(np.float32)
    
         csi_test1 = data['csi_test'].astype(np.float32)
         pilot_test1 = data['pilot_test'].astype(np.float32)       
-        phy_payload_test1 = data['phy_payload_test'].astype(np.float32)
-        groundtruth_test1 = data['groundtruth_test'].astype(np.float32)
-        label_test1 = data['label_test'].astype(np.float32)
-        label1_test1 = data['label1_test'].astype(np.float32)
+        #phy_payload_test1 = data['phy_payload_test'].astype(np.float32)
+        #groundtruth_test1 = data['groundtruth_test'].astype(np.float32)
+        #label_test1 = data['label_test'].astype(np.float32)
+        #label1_test1 = data['label1_test'].astype(np.float32)
+    csi_train1 = csi_train1[10000:50000,:,:,:]
+    pilot_train1 = pilot_train1[10000:50000,:,:,:]
+    csi_test1 = csi_train1[10000:20000,:,:,:]    
+    pilot_test1 = pilot_train1[10000:20000,:,:,:]  
 
+    #csi_test1 = csi_test1[1000:2000,:,:,:]        
+    #csi_train1 = csi_train1[2000:3000,:,:,:]  
+    #pilot_test1 = pilot_test1[1000:2000,:,:,:] 
+    #pilot_train1 = pilot_train1[2000:3000,:,:,:] 
     #csi_complete = np.concatenate([csi_train1,csi_test1], axis=0)
     #pilot_complete = np.concatenate([pilot_train1,pilot_test1], axis=0)
     #phy_payload_complete = np.concatenate([phy_payload_train1,phy_payload_test1], axis=0)
@@ -426,7 +434,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            if epoch == 1499:
+            if epoch == 1200:
                 if Mod_order == 2:
                     #print("Save mat")
                     scipy.io.savemat('MAT_OUT_BPSK/data%d.mat'%count, {'data': classifcation_np})
@@ -443,7 +451,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     scipy.io.savemat('MAT_OUT_16QAM/label%d.mat'%count, {'label': label_np})
                     #print('BER = ', bit_error)
             
-            if epoch == 0:
+            if epoch == 1000:
                 if Mod_order == 2:
                     #print("Save mat")
                     scipy.io.savemat('MAT_OUT_BPSK_Origin/data%d.mat'%count, {'data_origin': label1_np})
@@ -471,9 +479,15 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
                     tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)
-
-                    if epoch == 1:
-                        generator.save_weights(os.path.join('saved_models/QPSK', runid + '.tf'))
+                    if Mod_order ==2:
+                        if epoch == 1499:
+                            generator.save_weights(os.path.join('saved_models/BPSK', runid + '.tf'))
+                    elif Mod_order ==4:   
+                        if epoch == 1299:
+                            generator.save_weights(os.path.join('saved_models/QPSK', runid + '.tf'))
+                    elif Mod_order ==16:
+                        if epoch == 1499:
+                            generator.save_weights(os.path.join('saved_models/16QAM', runid + '.tf'))
                     G_loss.reset_states()       
                     D_loss.reset_states()                                 
                     accuracy.reset_states()
@@ -484,6 +498,12 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         #print('Inferencing time for 10k frames:', time.time() - start_time)
 #def NN_Testing(generator, testing_data_path):
     #testing_model = generator()
+    #if Mod_order ==2:    
+        #testing_model.load_weights(os.path.join('saved_models/BPSK/'))
+    #elif Mod_order ==4:   
+        #testing_model.load_weights(os.path.join('saved_models/QPSK/'))
+    #elif Mod_order ==16:
+        #testing_model.load_weights(os.path.join('saved_models/16QAM/'))
     #testing_model.load_weights('saved_models/')
 
 

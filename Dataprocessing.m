@@ -1,7 +1,7 @@
 %close all
 close all
 clear all
-load('/home/labuser/payload_reconstruction/BPSK_NoInter/payload_0.mat')
+load('/home/labuser/payload_reconstruction/BPSK_NoInter/payload_18.mat')
 
 data_ind = [2:7 9:21 23:27 39:43 45:57 59:64];
 x = 1:48;
@@ -49,8 +49,8 @@ for i = 1:5000
     end
     
     reorganized_csi = circshift(angleCSI,-(max(flip_loc)));
-%     figure(i)
-%     plot(x,reorganized_csi);
+    figure(i)
+    plot(x,reorganized_csi);
 %     figure(i+200)
 %     plot(x,abs(phase_diff));
     %hold on
