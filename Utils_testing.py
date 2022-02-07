@@ -205,18 +205,19 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 def NN_Testing(generator,  test_path, test_path1, logdir):
     testing_model = generator
     Mod_order = 4
-    batch_size = 100
+    batch_size = 1
     count = 0
     modulation = 'QPSK'
-    Interferece = 'Microwave/'
+    Interferece = 'BabyMonitor/'
     if Mod_order ==2:    
         testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x7477.tf'))
     elif Mod_order ==4:   
-        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x4621.tf'))
+        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x5819.tf'))
     elif Mod_order ==16:
         testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x7477.tf'))
     print('weights loaded')    
     test_data = load_processed_dataset(test_path, test_path1,5000, batch_size, batch_size)
+    start_time = time.time()
     for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1 in test_data:
         Csi_duplicate = tf.repeat(csi,40,axis=0)            
         Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
@@ -235,14 +236,14 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         #generated_out = generator([csi, pilot,csi1, pilot1,phy_payload,groundtruth])
         classification_result = tf.math.argmax(generated_out,axis = 2)
         #tf.print('Gen_out = ',classification_result)
-        
+        """
         classifcation_np = np.array(tf.cast(classification_result,tf.uint8))
         label_np = np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8))
         label1_np = np.array(tf.cast(tf.squeeze(Label1_input,axis = 2),tf.uint8))
         classification_bin = np.unpackbits(classifcation_np,axis =1).astype(int)
         label_bin = np.unpackbits(label_np,axis =1).astype(int)
         bit_error = np.sum(np.abs(label_bin - classification_bin))/(batch_size*40*48*np.log2(Mod_order))
-        print(bit_error)
+        #print(bit_error)
         
         if Mod_order == 2:
             #print("Save mat")
@@ -277,8 +278,8 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
             scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
             #print('BER = ', bit_error)
         count = count +1
-
-
+        """
+    print('Inferencing time for frames:', time.time() - start_time)
 
        
 if __name__ == "__main__":
