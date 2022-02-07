@@ -507,7 +507,7 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
     elif Mod_order ==16:
         testing_model.load_weights(os.path.join('saved_models/16QAM', 'PHY_Net_x7477' + '.tf'))
     print('weights loaded')    
-    test_data, test_data = load_processed_dataset(data_path, data_path1,5000, batch_size, batch_size)
+    test_data, test_data = load_processed_dataset(test_path, test_path1,5000, batch_size, batch_size)
     for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1 in test_data:
         Csi_duplicate = tf.repeat(csi,40,axis=0)            
         Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
@@ -521,9 +521,9 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
         Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
  
-        generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input,Csi_input1, Pilot_input1, training=False)
+        generated_out = testing_model(Csi_input, Pilot_input,Csi_input1, Pilot_input1,PHY_input,Groundtruth_input)
         #tf.print('Gen_out = ',generated_out[1,1,:])
-        
+        #generated_out = generator([csi, pilot,csi1, pilot1,phy_payload,groundtruth])
         classification_result = tf.math.argmax(generated_out,axis = 2)
         #tf.print('Gen_out = ',classification_result)
         
