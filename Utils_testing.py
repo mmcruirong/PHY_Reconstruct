@@ -165,8 +165,8 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         #label1_test1 = data['label1_test'].astype(np.float32)
     csi_train1 = csi_train1[10000:50000,:,:,:]
     pilot_train1 = pilot_train1[10000:50000,:,:,:]
-    csi_test1 = csi_train1[10000:11000,:,:,:]    
-    pilot_test1 = pilot_train1[10000:11000,:,:,:]  
+    csi_test1 = csi_train1[10000:15000,:,:,:]    
+    pilot_test1 = pilot_train1[10000:15000,:,:,:]  
 
     #csi_test1 = csi_test1[1000:2000,:,:,:]        
     #csi_train1 = csi_train1[2000:3000,:,:,:]  
@@ -205,7 +205,7 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 def NN_Testing(generator,  test_path, test_path1, logdir):
     testing_model = generator
     Mod_order = 4
-    batch_size = 1
+    batch_size = 100
     count = 0
     modulation = 'QPSK'
     Interferece = 'BabyMonitor/'
@@ -236,7 +236,7 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         #generated_out = generator([csi, pilot,csi1, pilot1,phy_payload,groundtruth])
         classification_result = tf.math.argmax(generated_out,axis = 2)
         #tf.print('Gen_out = ',classification_result)
-        """
+        
         classifcation_np = np.array(tf.cast(classification_result,tf.uint8))
         label_np = np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8))
         label1_np = np.array(tf.cast(tf.squeeze(Label1_input,axis = 2),tf.uint8))
@@ -278,7 +278,7 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
             scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
             #print('BER = ', bit_error)
         count = count +1
-        """
+        
     print('Inferencing time for frames:', time.time() - start_time)
 
        
