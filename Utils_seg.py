@@ -496,17 +496,44 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     total_bit_error = 0
             
         #print('Inferencing time for 10k frames:', time.time() - start_time)
-#def NN_Testing(generator, testing_data_path):
-    #testing_model = generator()
-    #if Mod_order ==2:    
-        #testing_model.load_weights(os.path.join('saved_models/BPSK/'))
-    #elif Mod_order ==4:   
-        #testing_model.load_weights(os.path.join('saved_models/QPSK/'))
-    #elif Mod_order ==16:
-        #testing_model.load_weights(os.path.join('saved_models/16QAM/'))
-    #testing_model.load_weights('saved_models/')
-
-
+def NN_Testing(generator,  test_path, test_path1, logdir):
+    testing_model = generator
+    Mod_order = 4
+    batch_size = 100
+    if Mod_order ==2:    
+        testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x7477' + '.tf'))
+    elif Mod_order ==4:   
+        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x5819' + '.tf'))
+    elif Mod_order ==16:
+        testing_model.load_weights(os.path.join('saved_models/16QAM', 'PHY_Net_x7477' + '.tf'))
+    print('weights loaded')    
+    test_data, test_data = load_processed_dataset(data_path, data_path1,5000, batch_size, batch_size)
+    for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1 in test_data:
+        Csi_duplicate = tf.repeat(csi,40,axis=0)            
+        Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
+        Pilot_input = tf.squeeze(tf.reshape(pilot,[40*batch_size,4,1,2]),axis = 2)
+        PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*batch_size,48,1,2]),axis = 2)
+        Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*batch_size,48,1,2]),axis = 2)
+        Label_input = tf.squeeze(tf.reshape(label,[40*batch_size,48,1,1]),axis = 2)
+        Label1_input = tf.squeeze(tf.reshape(label1,[40*batch_size,48,1,1]),axis = 2)
+        
+        Csi_duplicate1 = tf.repeat(csi1,40,axis=0)       
+        Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
+        Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
+ 
+        generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input,Csi_input1, Pilot_input1, training=False)
+        #tf.print('Gen_out = ',generated_out[1,1,:])
+        
+        classification_result = tf.math.argmax(generated_out,axis = 2)
+        #tf.print('Gen_out = ',classification_result)
+        
+        classifcation_np = np.array(tf.cast(classification_result,tf.uint8))
+        label_np = np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8))
+        label1_np = np.array(tf.cast(tf.squeeze(Label1_input,axis = 2),tf.uint8))
+        classification_bin = np.unpackbits(classifcation_np,axis =1).astype(int)
+        label_bin = np.unpackbits(label_np,axis =1).astype(int)
+        bit_error = np.sum(np.abs(label_bin - classification_bin))/(batch_size*40*48*np.log2(Mod_order))
+        print(bit_error)
 
 if __name__ == "__main__":
     get_processed_dataset("QPSK_full")
