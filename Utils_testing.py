@@ -127,7 +127,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER))
     print('SER =', np.mean(SER))
 
-    np.savez_compressed("PHY_dataset_QPSKSEGfull_" + str(split), 
+    np.savez_compressed("PHY_dataset_Microwave", 
                         csi_test=CSI,
                         pilot_test=PILOT,
                         phy_payload_test=PHY_PAYLOAD,
@@ -165,8 +165,8 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         #label1_test1 = data['label1_test'].astype(np.float32)
     csi_train1 = csi_train1[10000:50000,:,:,:]
     pilot_train1 = pilot_train1[10000:50000,:,:,:]
-    csi_test1 = csi_train1[10000:20000,:,:,:]    
-    pilot_test1 = pilot_train1[10000:20000,:,:,:]  
+    csi_test1 = csi_train1[10000:11000,:,:,:]    
+    pilot_test1 = pilot_train1[10000:11000,:,:,:]  
 
     #csi_test1 = csi_test1[1000:2000,:,:,:]        
     #csi_train1 = csi_train1[2000:3000,:,:,:]  
@@ -206,12 +206,15 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
     testing_model = generator
     Mod_order = 4
     batch_size = 100
+    count = 0
+    modulation = 'QPSK'
+    Interferece = 'Microwave/'
     if Mod_order ==2:    
-        testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x7477' + '.tf'))
+        testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x7477.tf'))
     elif Mod_order ==4:   
-        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x5819' + '.tf'))
+        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x4621.tf'))
     elif Mod_order ==16:
-        testing_model.load_weights(os.path.join('saved_models/16QAM', 'PHY_Net_x7477' + '.tf'))
+        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x7477.tf'))
     print('weights loaded')    
     test_data = load_processed_dataset(test_path, test_path1,5000, batch_size, batch_size)
     for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1 in test_data:
@@ -240,6 +243,43 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         label_bin = np.unpackbits(label_np,axis =1).astype(int)
         bit_error = np.sum(np.abs(label_bin - classification_bin))/(batch_size*40*48*np.log2(Mod_order))
         print(bit_error)
+        
+        if Mod_order == 2:
+            #print("Save mat")
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
+            #print('BER = ', bit_error)
+        elif Mod_order == 4:
+            #print("Save mat")
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
+            #print('BER = ', bit_error)
+        elif Mod_order == 16:
+            #print("Save mat")
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
+            #print('BER = ', bit_error)
+        
+        
+        if Mod_order == 2:
+            #print("Save mat")
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/data%d.mat'%count, {'data_origin': label1_np})
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
+            #print('BER = ', bit_error)
+        elif Mod_order == 4:
+            #print("Save mat")
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/data%d.mat'%count, {'data_origin': label1_np})
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
+            #print('BER = ', bit_error)
+        elif Mod_order == 16:
+            #print("Save mat")
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/data%d.mat'%count, {'data_origin': label1_np})
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
+            #print('BER = ', bit_error)
+        count = count +1
 
+
+
+       
 if __name__ == "__main__":
-    get_processed_dataset("test_dataset/babymonitor")
+    get_processed_dataset("test_dataset/microwave")
