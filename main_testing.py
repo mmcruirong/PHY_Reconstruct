@@ -1,5 +1,5 @@
 from Model_seg import PHY_Reconstruction_AE#,CSI_Pilot_Features#PHY_Reconstruction_Generator
-from Utils_seg import NN_training,NN_Testing
+from Utils_testing import NN_Testing
 import tensorflow as tf
 if __name__ == "__main__":
     gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -15,6 +15,5 @@ if __name__ == "__main__":
             print(e)
 
     PHY_Net_gen = PHY_Reconstruction_AE()#PHY_Reconstruction_Generator()
-    PHY_Net_disc = PHY_Reconstruction_AE() #PHY_Reconstruction_discriminator()
     NN_Testing(PHY_Net_gen, "PHY_dataset_QPSKSEGfull_0.8.npz", "PHY_dataset_NoInter_0.8.npz", "logs")#PHY_Net_disc, 
 #PHY_dataset_PAYLOADONLYv1_0

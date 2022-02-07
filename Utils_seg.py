@@ -521,7 +521,7 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
         Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
  
-        generated_out = testing_model(Csi_input, Pilot_input,Csi_input1, Pilot_input1,PHY_input,Groundtruth_input)
+        generated_out = testing_model([Csi_input, Pilot_input,Csi_input1, Pilot_input1,PHY_input,Groundtruth_input])
         #tf.print('Gen_out = ',generated_out[1,1,:])
         #generated_out = generator([csi, pilot,csi1, pilot1,phy_payload,groundtruth])
         classification_result = tf.math.argmax(generated_out,axis = 2)
