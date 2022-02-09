@@ -128,7 +128,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER[test_indices, :, :]))
     print('SER =', np.mean(SER[test_indices, :, :]))
 
-    np.savez_compressed("PHY_dataset_QPSKSEGfull_" + str(split), 
+    np.savez_compressed("PHY_dataset_16QAMSEGfull_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -244,7 +244,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
     batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
-    Mod_order = 4
+    Mod_order = 16
     writer = tf.summary.create_file_writer(logdir + '/' + runid)
     generator_optimizer = tf.keras.optimizers.Adam(1e-3)
     discriminator_optimizer = tf.keras.optimizers.Adam(1e-3)
@@ -452,7 +452,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     scipy.io.savemat('MAT_OUT_16QAM/label%d.mat'%count, {'label': label_np})
                     #print('BER = ', bit_error)
             
-            if epoch == 1000:
+            if epoch == 0:
                 if Mod_order == 2:
                     #print("Save mat")
                     scipy.io.savemat('MAT_OUT_BPSK_Origin/data%d.mat'%count, {'data_origin': label1_np})
@@ -499,4 +499,4 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         #print('Inferencing time for 10k frames:', time.time() - start_time)
 
 if __name__ == "__main__":
-    get_processed_dataset("QPSK_full")
+    get_processed_dataset("16QAM_full")

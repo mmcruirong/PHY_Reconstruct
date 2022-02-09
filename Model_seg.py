@@ -163,7 +163,7 @@ def CNN():
     #out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
     out = tf.keras.layers.Dropout(.25)(out)
-    out = tf.keras.layers.Dense(4,activation = 'softmax')(out)
+    out = tf.keras.layers.Dense(16,activation = 'softmax')(out)
     
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -558,7 +558,7 @@ def PHY_Reconstruction_AE():
 
     #MultiAtt_out_csi = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(CSI_diff,CSI_diff)
     #MultiAtt_out_pilot = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(pilot_diff,pilot_diff)
-    cross_attention = tf.keras.layers.MultiHeadAttention(num_heads=8, key_dim=1)(pilot_diff,CSI_diff)
+    cross_attention = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=1)(pilot_diff,CSI_diff)
     #cross_attention=  tf.keras.layers.LayerNormalization()(cross_attention)
     #print('Attentionshape =', MultiAtt_out_csi.shape)
     csi_feature_correct = feature_extractor_csi_comb()(CSI_diff)
