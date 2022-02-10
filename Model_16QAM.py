@@ -135,7 +135,7 @@ def CrossCNN():
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def CNN():
-    inp = tf.keras.Input(shape=(48,300))#, activation='leaky_relu'
+    inp = tf.keras.Input(shape=(48,400))#, activation='leaky_relu'
     out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=2, strides=2, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)

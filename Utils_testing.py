@@ -127,7 +127,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER))
     print('SER =', np.mean(SER))
 
-    np.savez_compressed("PHY_dataset_Microwave", 
+    np.savez_compressed("PHY_dataset_WN16", 
                         csi_test=CSI,
                         pilot_test=PILOT,
                         phy_payload_test=PHY_PAYLOAD,
@@ -163,11 +163,10 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         #groundtruth_test1 = data['groundtruth_test'].astype(np.float32)
         #label_test1 = data['label_test'].astype(np.float32)
         #label1_test1 = data['label1_test'].astype(np.float32)
-    csi_train1 = csi_train1[10000:50000,:,:,:]
-    pilot_train1 = pilot_train1[10000:50000,:,:,:]
-    csi_test1 = csi_train1[10000:15000,:,:,:]    
-    pilot_test1 = pilot_train1[10000:15000,:,:,:]  
-
+    csi_train1 = csi_train1[40000:80000,:,:,:]
+    pilot_train1 = pilot_train1[40000:80000,:,:,:]
+    csi_test1 = csi_train1[0:10000,:,:,:]    
+    pilot_test1 = pilot_train1[0:10000,:,:,:]  
     #csi_test1 = csi_test1[1000:2000,:,:,:]        
     #csi_train1 = csi_train1[2000:3000,:,:,:]  
     #pilot_test1 = pilot_test1[1000:2000,:,:,:] 
@@ -204,17 +203,17 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 
 def NN_Testing(generator,  test_path, test_path1, logdir):
     testing_model = generator
-    Mod_order = 4
+    Mod_order = 16
     batch_size = 100
     count = 0
-    modulation = 'QPSK'
-    Interferece = 'BabyMonitor/'
+    modulation = '16QAM'
+    Interferece = 'Whitenoise/'
     if Mod_order ==2:    
         testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x7477.tf'))
     elif Mod_order ==4:   
         testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x5819.tf'))
     elif Mod_order ==16:
-        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x7477.tf'))
+        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x3756.tf'))
     print('weights loaded')    
     test_data = load_processed_dataset(test_path, test_path1,5000, batch_size, batch_size)
     start_time = time.time()
@@ -283,4 +282,4 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
 
        
 if __name__ == "__main__":
-    get_processed_dataset("test_dataset/microwave")
+    get_processed_dataset("test_dataset/Whitenoise/16QAM")

@@ -1,4 +1,4 @@
-from Model_seg import PHY_Reconstruction_AE#,CSI_Pilot_Features#PHY_Reconstruction_Generator
+from Model_16QAM import PHY_Reconstruction_AE#,CSI_Pilot_Features#PHY_Reconstruction_Generator
 from Utils_testing import NN_Testing
 import tensorflow as tf
 if __name__ == "__main__":
@@ -15,5 +15,5 @@ if __name__ == "__main__":
             print(e)
 
     PHY_Net_gen = PHY_Reconstruction_AE()#PHY_Reconstruction_Generator()
-    NN_Testing(PHY_Net_gen, "PHY_dataset_BabyMonitor.npz", "PHY_dataset_NoInter_0.8.npz", "logs")#PHY_Net_disc, 
+    NN_Testing(PHY_Net_gen, "PHY_dataset_BB16.npz", "PHY_dataset_NoInter_0.8.npz", "logs")#PHY_Net_disc, 
 #PHY_dataset_PAYLOADONLYv1_0

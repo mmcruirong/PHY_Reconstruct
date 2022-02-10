@@ -1,5 +1,5 @@
-from Model_seg import PHY_Reconstruction_AE#,CSI_Pilot_Features#PHY_Reconstruction_Generator
-from Utils_seg import NN_training
+from Model_16QAM import PHY_Reconstruction_AE#,CSI_Pilot_Features#PHY_Reconstruction_Generator
+from Utils_16QAM import NN_training
 import tensorflow as tf
 if __name__ == "__main__":
     gpus = tf.config.experimental.list_physical_devices('GPU')
