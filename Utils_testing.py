@@ -127,7 +127,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER))
     print('SER =', np.mean(SER))
 
-    np.savez_compressed("PHY_dataset_WN16", 
+    np.savez_compressed("PHY_dataset_OW16", 
                         csi_test=CSI,
                         pilot_test=PILOT,
                         phy_payload_test=PHY_PAYLOAD,
@@ -207,7 +207,7 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
     batch_size = 100
     count = 0
     modulation = '16QAM'
-    Interferece = 'Whitenoise/'
+    Interferece = 'OtherWiFi/'  #Whitenoise #OtherWiFi
     if Mod_order ==2:    
         testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x7477.tf'))
     elif Mod_order ==4:   
@@ -282,4 +282,4 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
 
        
 if __name__ == "__main__":
-    get_processed_dataset("test_dataset/Whitenoise/16QAM")
+    get_processed_dataset("test_dataset/OtherWiFi/16QAM")
