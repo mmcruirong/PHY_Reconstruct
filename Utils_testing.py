@@ -231,7 +231,7 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         Csi_duplicate1 = tf.repeat(csi1,40,axis=0)       
         Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
         Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
-        print('SNR shape = ',snr.shape)
+        #print('SNR shape = ',snr.shape)
         generated_out = testing_model([Csi_input, Pilot_input,Csi_input1, Pilot_input1,PHY_input,Groundtruth_input])
         #tf.print('Gen_out = ',generated_out[1,1,:])
         #generated_out = generator([csi, pilot,csi1, pilot1,phy_payload,groundtruth])
@@ -244,27 +244,28 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         classification_bin = np.unpackbits(classifcation_np,axis =1).astype(int)
         label_bin = np.unpackbits(label_np,axis =1).astype(int)
         bit_error = np.sum(np.abs(label_bin - classification_bin))/(batch_size*40*48*np.log2(Mod_order))
-        #print(bit_error)
+        sinr = np.array(tf.cast(snr,tf.float32))
+
         
         if Mod_order == 2:
             #print("Save mat")
             scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
             scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': snr})
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': sinr})
 
             #print('BER = ', bit_error)
         elif Mod_order == 4:
             #print("Save mat")
             scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
             scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': snr})
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': sinr})
 
             #print('BER = ', bit_error)
         elif Mod_order == 16:
             #print("Save mat")
             scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
             scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': snr})
+            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': sinr})
 
             #print('BER = ', bit_error)
         
