@@ -225,18 +225,7 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
     #x1 = np.multiply(x1[:, :, :, 0], x1[:, :, :, 1])  #QPSK
 
 
-
-    test_data_np = np.array(tf.cast(tf.squeeze(label_test,axis = 3),tf.uint8))
-    test_data1_np = np.array(tf.cast(tf.squeeze(label1_test,axis = 3),tf.uint8))
-    test_data_np_bin = np.unpackbits(test_data_np,axis =2).astype(int)
-    test_data1_np_bin = np.unpackbits(test_data1_np,axis =2).astype(int)
-    bit_error = np.sum(np.abs(test_data_np_bin - test_data1_np_bin))/(10000*40*48*np.log2(16))
-    #print('X1 shape = ',x1.shape)
-    #for i in range(100):
-        #print("baseline acc : ", np.mean(x1[i,:,:]>0))
-    print("Testing baseline acc : ", bit_error)
-    #print("Training baseline acc : ", np.mean(x_train>0))
-    #print("Testing baseline acc : ", np.mean(x_test>0))
+    
 
     return train_data, test_data
 
