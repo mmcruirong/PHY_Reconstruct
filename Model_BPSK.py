@@ -135,7 +135,7 @@ def CrossCNN():
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def CNN():
-    inp = tf.keras.Input(shape=(48,400))#, activation='leaky_relu'
+    inp = tf.keras.Input(shape=(48,300))#, activation='leaky_relu'
     out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=2, strides=2, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
@@ -158,9 +158,9 @@ def CNN():
     out = tf.keras.layers.Conv1DTranspose(filters=int(64*scale), kernel_size=2, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    #out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
-    #out = tf.keras.layers.BatchNormalization()(out)
-    #out = tf.keras.layers.ReLU()(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
     out = tf.keras.layers.Dropout(.25)(out)
     out = tf.keras.layers.Dense(2,activation = 'softmax')(out)
@@ -580,7 +580,7 @@ def PHY_Reconstruction_AE():
     #stackcell = [phy_lstm_1,correction]
     #LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
     #Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True, return_sequences=True)
-    encoder_out, state_h, state_c = tf.keras.layers.LSTM(400,return_state=True, return_sequences=True)(EQ_out) #Reconstructioncell(EQ_out)
+    encoder_out, state_h, state_c = tf.keras.layers.LSTM(300,return_state=True, return_sequences=True)(EQ_out) #Reconstructioncell(EQ_out)
     #out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(ground_truth)
     #out = tf.keras.layers.BatchNormalization()(out)
     #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)

@@ -1,5 +1,6 @@
 close all
-MODE_ORDER = 4;% BPSK = 1 QPSK =2 16QAM = 4
+clear
+MODE_ORDER = 1;% BPSK = 1 QPSK =2 16QAM = 4
 
 %file names
 %Testing set names
@@ -13,11 +14,11 @@ MODE_ORDER = 4;% BPSK = 1 QPSK =2 16QAM = 4
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM_Origin
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM
 for j = 1:100
-    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_16QAM_Origin/data', num2str(j-1), '.mat'];
+    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/data', num2str(j-1), '.mat'];
  
-    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_16QAM_Origin/label', num2str(j-1), '.mat'];
-    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_16QAM/data', num2str(j-1), '.mat'];
-    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_16QAM/label', num2str(j-1), '.mat'];
+    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/label', num2str(j-1), '.mat'];
+    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK/data', num2str(j-1), '.mat'];
+    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK/label', num2str(j-1), '.mat'];
     load(dataname_origin)
     load(labelname_origin)
     load(dataname)
