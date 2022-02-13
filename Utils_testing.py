@@ -244,7 +244,7 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         classification_bin = np.unpackbits(classifcation_np,axis =1).astype(int)
         label_bin = np.unpackbits(label_np,axis =1).astype(int)
         bit_error = np.sum(np.abs(label_bin - classification_bin))/(batch_size*40*48*np.log2(Mod_order))
-        sinr = np.array(tf.cast(snr,tf.float32))
+        sinr = np.array(snr)
 
         
         if Mod_order == 2:

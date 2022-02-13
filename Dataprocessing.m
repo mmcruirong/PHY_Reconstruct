@@ -2,7 +2,7 @@
 close all
 clear all
 %load('/home/labuser/payload_reconstruction/BPSK_NoInter/payload_18.mat')
-load('/home/labuser/payload_reconstruction/test_dataset/babymonitor/BPSK/payload_BPSK1.mat')
+load('/home/labuser/payload_reconstruction/BPSK_full/payload_BPSK2.mat')
 
 data_ind = [2:7 9:21 23:27 39:43 45:57 59:64];
 x = 1:48;
