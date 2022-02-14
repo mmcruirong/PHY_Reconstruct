@@ -198,10 +198,10 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         #groundtruth_test1 = data['groundtruth_test'].astype(np.float32)
         #label_test1 = data['label_test'].astype(np.float32)
         #label1_test1 = data['label1_test'].astype(np.float32)
-    csi_train1 = csi_train1[40000:80000,:,:,:]
-    pilot_train1 = pilot_train1[40000:80000,:,:,:]
-    csi_test1 = csi_train1[0:10000,:,:,:]    
-    pilot_test1 = pilot_train1[0:10000,:,:,:]  
+    csi_train1 = csi_train1[20000:95000,:,:,:]
+    pilot_train1 = pilot_train1[20000:95000,:,:,:]
+    csi_test1 = csi_train1[0:15000,:,:,:]    
+    pilot_test1 = pilot_train1[0:15000,:,:,:]  
     #print('PHY SHAPE 1= ',csi_test1.shape)
     #print('PHY SHAPE = ',csi_test.shape)
     #csi_test1 = csi_test1[1000:2000,:,:,:]        
@@ -453,10 +453,9 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     tf.summary.scalar('test/g_loss', G_loss.result(), training_step)
                     tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
                     tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
-                    tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)
-                    if Mod_order ==2:
-                        if epoch == 10:
-                            generator.save_weights(os.path.join('saved_models/BPSK', runid + '.tf'))
+                    tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)                 
+                    if epoch == 10:
+                        generator.save_weights(os.path.join('saved_models/BPSK', runid + '.tf'))
                    
                     G_loss.reset_states()       
                     D_loss.reset_states()                                 
@@ -468,4 +467,4 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         #print('Inferencing time for 10k frames:', time.time() - start_time)
 
 if __name__ == "__main__":
-    get_processed_dataset("BPSK_full")
+    get_processed_dataset("BPSK_full_legacy")

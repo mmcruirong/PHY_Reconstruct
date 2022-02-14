@@ -465,10 +465,9 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
                     tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)
-                    if Mod_order ==2:
-                        if epoch == 59:
-                            generator.save_weights(os.path.join('saved_models/QPSK', runid + '.tf'))
-                   
+                    if epoch == 59:
+                        generator.save_weights(os.path.join('saved_models/QPSK', runid + '.tf'))
+                
                     G_loss.reset_states()       
                     D_loss.reset_states()                                 
                     accuracy.reset_states()

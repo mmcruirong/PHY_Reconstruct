@@ -1,5 +1,6 @@
 close all
-MODE_ORDER = 1;% BPSK = 1 QPSK =2 16QAM = 4
+clear
+MODE_ORDER = 2;% BPSK = 1 QPSK =2 16QAM = 4
 
 %file names
 %Testing set names
@@ -12,7 +13,7 @@ MODE_ORDER = 1;% BPSK = 1 QPSK =2 16QAM = 4
 %/home/labuser/payload_reconstruction/test_results/OtherWiFi/16QAM_Origin/
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM_Origin
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM
-for j = 1:100
+for j = 1:150
     dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/data', num2str(j-1), '.mat'];
     snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/sinr', num2str(j-1), '.mat'];
 
@@ -83,7 +84,7 @@ for incremental = 1:30
     BER_array1 = BER_array(a1,1);
     BER_SINR(incremental,1) = mean(BER_origin_array1);
     BER_SINR(incremental,2) = mean(BER_array1);    
-    Accepted_frame(incremental,3) = length(find(BER_array1<5))/length(a1);
+    Accepted_frame(incremental,3) = length(find(BER_array1<3))/length(a1);
     Accepted_frame(incremental,1) = length(a1)/10000;
     BER_improve(incremental) = (mean(BER_origin_array1)-mean(BER_array1))/mean(BER_origin_array1);
     x(incremental) = floor(min(min(SINR)))+incremental+25;
@@ -101,20 +102,23 @@ figure(1)
 plot(x,BER_improve,'LineWidth',5)
 xlabel('SINR','FontSize',24);
 ylabel('BER Improvment(%)','FontSize',24);
-xlim([-1.5,5])
+xlim([-2.5,6])
+xticks([-2 -1 0 1 2 3 4 5 6])
 set(gca,'FontSize',24)
 figure(2)
 plot(x,Accepted_frame(:,3),'LineWidth',5)
 xlabel('SINR','FontSize',24);
 ylabel('FRR Improvment(%)','FontSize',24);
-xlim([-2.5,5])
+xlim([-2.5,6])
+xticks([-2 -1 0 1 2 3 4 5 6])
 set(gca,'FontSize',24)
 
 figure(3)
 bar(x,Accepted_frame(:,2:3))
 xlabel('SINR','FontSize',24);
 ylabel('FRR','FontSize',24);
-xlim([-2.5,5.5])
+xlim([-2.5,6.5])
+xticks([-2 -1 0 1 2 3 4 5 6])
 legend('Before NN','After NN')
 set(gca,'FontSize',24)
 
@@ -123,7 +127,8 @@ figure(4)
 bar(x,BER_SINR)
 xlabel('SINR','FontSize',24);
 ylabel('BER','FontSize',24);
-xlim([-2.5,5])
+xlim([-2.5,6.5])
+xticks([-2 -1 0 1 2 3 4 5 6])
 legend('Before NN','After NN')
 
 set(gca,'FontSize',24)
