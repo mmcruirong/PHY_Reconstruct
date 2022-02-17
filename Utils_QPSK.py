@@ -440,7 +440,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            if epoch == 59:              
+            if epoch == 29:              
                 #print("Save mat")
                 scipy.io.savemat('MAT_OUT_QPSK/data%d.mat'%count, {'data': classifcation_np})
                 scipy.io.savemat('MAT_OUT_QPSK/label%d.mat'%count, {'label': label_np})
@@ -465,7 +465,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
                     tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)
-                    if epoch == 59:
+                    if epoch == 29:
                         generator.save_weights(os.path.join('saved_models/QPSK', runid + '.tf'))
                 
                     G_loss.reset_states()       

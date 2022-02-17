@@ -15,7 +15,6 @@ def feature_extractor_csi():
     out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dropout(.25)(out)
     out = tf.keras.layers.Dense(int(128*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
     
@@ -30,22 +29,20 @@ def feature_extractor_csi1():
     out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dropout(.25)(out)
     out = tf.keras.layers.Dense(int(128*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_csi_comb():
     inp = tf.keras.Input(shape=(48,128*scale))
-    out = tf.keras.layers.Conv1D(filters=int(256*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.Conv1D(filters=int(16*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    #out = tf.keras.layers.Conv1D(filters=int(256*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
-    #out = tf.keras.layers.BatchNormalization()(out)
-    #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    #out = tf.keras.layers.Conv1D(filters=int(128*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
-    #out = tf.keras.layers.BatchNormalization()(out)
-    #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    #out = tf.keras.layers.Dropout(.25)(out)
+    out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Dense(int(128*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -72,7 +69,6 @@ def feature_extractor_pilot():
     out = tf.keras.layers.Conv1DTranspose(filters=int(64*scale), kernel_size=2, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dropout(.25)(out)
     out = tf.keras.layers.Dense(int(128*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
@@ -99,40 +95,24 @@ def feature_extractor_pilot1():
     out = tf.keras.layers.Conv1DTranspose(filters=int(64*scale), kernel_size=2, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Dropout(.25)(out)
     out = tf.keras.layers.Dense(int(128*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 def feature_extractor_pilot_comb():
     inp = tf.keras.Input(shape=(48, 128*scale))
-    out = tf.keras.layers.Conv1D(filters=int(256*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(inp)
+    out = tf.keras.layers.Conv1D(filters=int(16*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(inp)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    #out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
-    #out = tf.keras.layers.BatchNormalization()(out)
-    #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    #out = tf.keras.layers.Conv1D(filters=int(128*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
-    #out = tf.keras.layers.BatchNormalization()(out)
-    #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    #out = tf.keras.layers.Dropout(.25)(out)
+    out = tf.keras.layers.Conv1D(filters=int(32*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1D(filters=int(64*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Dense(int(128*scale))(out)
     return tf.keras.Model(inputs=inp, outputs=out)
 
 
-def CrossCNN():
-    inp = tf.keras.Input(shape=(48,512))#, activation='leaky_relu'
-    out = tf.keras.layers.Conv1D(filters=128, kernel_size=3, strides=1, padding='same', use_bias=False)(inp)
-    out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1D(filters=256, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Conv1D(filters=512, kernel_size=3, strides=1, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.ReLU()(out)
-    out = tf.keras.layers.Dense(256)(out)
-    
-    return tf.keras.Model(inputs=inp, outputs=out)
 
 def CNN():
     inp = tf.keras.Input(shape=(48,300))#, activation='leaky_relu'
@@ -152,17 +132,16 @@ def CNN():
     #encoder_out = mu + sd * tf.random.normal([6*128], 0, 1, tf.float32)
     #decoder_inp = tf.keras.layers.Dense(6*128,activation = None)(encoder_out)
     out = tf.keras.layers.Reshape([12,128])(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=int(128*scale), kernel_size=2, strides=2, padding='same', use_bias=False)(out)
-    out = tf.keras.layers.BatchNormalization()(out)
-    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
     out = tf.keras.layers.Conv1DTranspose(filters=int(64*scale), kernel_size=2, strides=2, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
-    out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=3, strides=1, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=int(32*scale), kernel_size=2, strides=2, padding='same', use_bias=False)(out)
+    out = tf.keras.layers.BatchNormalization()(out)
+    out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)
+    out = tf.keras.layers.Conv1DTranspose(filters=int(16*scale), kernel_size=2, strides=1, padding='same', use_bias=False)(out)
     out = tf.keras.layers.BatchNormalization()(out)
     out = tf.keras.layers.ReLU()(out)
     #out = tf.keras.layers.Dense(2)(out)
-    out = tf.keras.layers.Dropout(.25)(out)
     out = tf.keras.layers.Dense(2,activation = 'softmax')(out)
     
     return tf.keras.Model(inputs=inp, outputs=out)
@@ -572,7 +551,7 @@ def PHY_Reconstruction_AE():
     #
     EQ_phy =  phy_branch - cross_attention -  csi_feature_correct - pilot_feature_correct #mixed_feature
     #Channel_features = tf.concat([EQ_phy,csi_feature_correct,pilot_feature_correct],2)
-    EQ_out =  tf.keras.layers.Dense(int(512*scale))(EQ_phy)
+    #EQ_out =  tf.keras.layers.Dense(int(512*scale))(EQ_phy)
 
     #print('Out_shape', features.shape)
     #phy_lstm_1 = tf.keras.layers.LSTMCell(int(128*scale), name='lstm1') # (40, 48)
@@ -580,7 +559,7 @@ def PHY_Reconstruction_AE():
     #stackcell = [phy_lstm_1,correction]
     #LSTM_stackcell = tf.keras.layers.StackedRNNCells(stackcell)
     #Reconstructioncell = tf.keras.layers.RNN(LSTM_stackcell,return_state=True, return_sequences=True)
-    encoder_out, state_h, state_c = tf.keras.layers.LSTM(300,return_state=True, return_sequences=True)(EQ_out) #Reconstructioncell(EQ_out)
+    encoder_out, state_h, state_c = tf.keras.layers.LSTM(300,return_state=True, return_sequences=True)(EQ_phy) #Reconstructioncell(EQ_out)
     #out = tf.keras.layers.Conv1D(filters=16, kernel_size=3, strides=1, padding='same', use_bias=False)(ground_truth)
     #out = tf.keras.layers.BatchNormalization()(out)
     #out = tf.keras.layers.LeakyReLU(alpha=0.1)(out)

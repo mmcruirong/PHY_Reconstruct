@@ -1,6 +1,6 @@
 close all
 clear
-MODE_ORDER = 2;% BPSK = 1 QPSK =2 16QAM = 4
+MODE_ORDER = 1;% BPSK = 1 QPSK =2 16QAM = 4
 
 %file names
 %Testing set names
@@ -13,7 +13,7 @@ MODE_ORDER = 2;% BPSK = 1 QPSK =2 16QAM = 4
 %/home/labuser/payload_reconstruction/test_results/OtherWiFi/16QAM_Origin/
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM_Origin
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM
-for j = 1:150
+for j = 1:100
     dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/data', num2str(j-1), '.mat'];
     snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/sinr', num2str(j-1), '.mat'];
 
@@ -141,3 +141,6 @@ xlim([-2,5])
 legend('Before NN','After NN')
 set(gca,'FontSize',24)
 
+dataset1.CSI = data_set.CSI;
+dataset1.Pilot = data_set.Pilots;
+dataset1.Constellation = data_set.Constallation;
