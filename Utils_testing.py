@@ -216,9 +216,11 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x5819.tf'))
     elif Mod_order ==16:
         testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x3756.tf'))
+    elif Mod_order ==64:
+        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x3756.tf'))
     print('weights loaded')    
     test_data = load_processed_dataset(test_path, test_path1,5000, batch_size, batch_size)
-    start_time = time.time()
+    #start_time = time.time()
     for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1,snr in test_data:
         Csi_duplicate = tf.repeat(csi,40,axis=0)            
         Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
@@ -247,48 +249,19 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         sinr = np.array(snr)
 
         
-        if Mod_order == 2:
-            #print("Save mat")
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': sinr})
-
-            #print('BER = ', bit_error)
-        elif Mod_order == 4:
-            #print("Save mat")
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': sinr})
-
-            #print('BER = ', bit_error)
-        elif Mod_order == 16:
-            #print("Save mat")
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': sinr})
-
-            #print('BER = ', bit_error)
         
+        scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
+        scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
+        scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': sinr})
         
-        if Mod_order == 2:
-            #print("Save mat")
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/data%d.mat'%count, {'data_origin': label1_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
-
-            #print('BER = ', bit_error)
-        elif Mod_order == 4:
-            #print("Save mat")
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/data%d.mat'%count, {'data_origin': label1_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
-            #print('BER = ', bit_error)
-        elif Mod_order == 16:
-            #print("Save mat")
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/data%d.mat'%count, {'data_origin': label1_np})
-            scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
-            #print('BER = ', bit_error)
+       
+        #print("Save mat")
+        scipy.io.savemat('test_results/'+Interferece + modulation+'_After/data%d.mat'%count, {'data_origin': label1_np})
+        scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
+    
         count = count +1
         
-    print('Inferencing time for frames:', time.time() - start_time)
+    #print('Inferencing time for frames:', time.time() - start_time)
 
        
 if __name__ == "__main__":
