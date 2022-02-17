@@ -128,7 +128,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER[test_indices, :, :]))
     print('SNR =', np.mean(SNR[test_indices, :, :]))
 
-    np.savez_compressed("PHY_dataset_QPSKfull_" + str(split), 
+    np.savez_compressed("PHY_dataset_64QAMfull_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -478,4 +478,4 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         #print('Inferencing time for 10k frames:', time.time() - start_time)
 
 if __name__ == "__main__":
-    get_processed_dataset("QPSK_full")
+    get_processed_dataset("64QAM_full")
