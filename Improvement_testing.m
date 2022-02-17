@@ -79,7 +79,7 @@ Accepted_frame = zeros(30,3);
 BER_SINR = zeros(30,2);
 %% Find SINR VS FRR VS BER
 for incremental = 1:30
-    [a1,b1]= find((SINR(:) >= (floor(min(min(SINR)))+incremental+25)) & (SINR(:) <= (floor(min(min(SINR)))+incremental+1+25)));
+    [a1,b1]= find((SINR(:) >= (floor(min(min(SINR)))+incremental+20)) & (SINR(:) <= (floor(min(min(SINR)))+incremental+1+20)));
     BER_origin_array1 = BER_origin_array(a1,1);
     BER_array1 = BER_array(a1,1);
     BER_SINR(incremental,1) = mean(BER_origin_array1);
@@ -87,7 +87,7 @@ for incremental = 1:30
     Accepted_frame(incremental,3) = length(find(BER_array1<3))/length(a1);
     Accepted_frame(incremental,1) = length(a1)/10000;
     BER_improve(incremental) = (mean(BER_origin_array1)-mean(BER_array1))/mean(BER_origin_array1);
-    x(incremental) = floor(min(min(SINR)))+incremental+25;
+    x(incremental) = floor(min(min(SINR)))+incremental+20;
 end
 loss = zeros(20,1);
 for k = 1:19

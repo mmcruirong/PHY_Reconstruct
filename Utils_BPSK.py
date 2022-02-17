@@ -128,7 +128,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER[test_indices, :, :]))
     print('SNR =', np.mean(SNR[test_indices, :, :]))
 
-    np.savez_compressed("PHY_dataset_BPSK_" + str(split), 
+    np.savez_compressed("PHY_dataset_BPSKfull_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -155,12 +155,12 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         label_train = data['label_train'].astype(np.float32)
         label1_train = data['label1_train'].astype(np.float32)
 
-        csi_train = csi_train[0:100,:,:,:]        
-        pilot_train = pilot_train[0:100,:,:,:] 
-        phy_payload_train = phy_payload_train[0:100,:,:,:] 
-        groundtruth_train = groundtruth_train[0:100,:,:,:]
-        label_train = label_train[0:100,:,:,:]
-        label1_train = label1_train[0:100,:,:,:]
+        #csi_train = csi_train[0:100,:,:,:]        
+        #pilot_train = pilot_train[0:100,:,:,:] 
+        #phy_payload_train = phy_payload_train[0:100,:,:,:] 
+        #groundtruth_train = groundtruth_train[0:100,:,:,:]
+        #label_train = label_train[0:100,:,:,:]
+        #label1_train = label1_train[0:100,:,:,:]
         #mixed_train = np.concatenate([phy_payload_train[0:35000,:,:,:],groundtruth_train[35000:40000,:,:,:]], axis=0)
         #label1_mixed_train = np.concatenate([label1_train[0:35000,:,:,:],label1_train[35000:40000,:,:,:]], axis=0)
 
@@ -176,13 +176,13 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         label1_test = data['label1_test'].astype(np.float32)
         snr_test = data['snr_test'].astype(np.float32)
 
-        csi_test = csi_test[0:100,:,:,:]        
-        pilot_test = pilot_test[0:100,:,:,:] 
-        phy_payload_test = phy_payload_test[0:100,:,:,:] 
-        groundtruth_test = groundtruth_test[0:100,:,:,:]
-        label_test = label_test[0:100,:,:,:]
-        label1_test = label1_test[0:100,:,:,:]
-        snr_test = snr_test[0:100,:,:]
+        #csi_test = csi_test[0:100,:,:,:]        
+        #pilot_test = pilot_test[0:100,:,:,:] 
+        #phy_payload_test = phy_payload_test[0:100,:,:,:] 
+        #groundtruth_test = groundtruth_test[0:100,:,:,:]
+        #label_test = label_test[0:100,:,:,:]
+        #label1_test = label1_test[0:100,:,:,:]
+        #snr_test = snr_test[0:100,:,:]
 
     with np.load(path1) as data:
         csi_train1 = data['csi_train'].astype(np.float32)
@@ -198,10 +198,10 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         #groundtruth_test1 = data['groundtruth_test'].astype(np.float32)
         #label_test1 = data['label_test'].astype(np.float32)
         #label1_test1 = data['label1_test'].astype(np.float32)
-    csi_train1 = csi_train1[0:100,:,:,:]
-    pilot_train1 = pilot_train1[0:100,:,:,:]
-    csi_test1 = csi_train1[0:100,:,:,:]    
-    pilot_test1 = pilot_train1[0:100,:,:,:]  
+    csi_train1 = csi_train1[20000:60000,:,:,:]
+    pilot_train1 = pilot_train1[20000:60000,:,:,:]
+    csi_test1 = csi_train1[0:10000,:,:,:]    
+    pilot_test1 = pilot_train1[0:10000,:,:,:]  
     #print('PHY SHAPE 1= ',csi_test1.shape)
     #print('PHY SHAPE = ',csi_test.shape)
     #csi_test1 = csi_test1[1000:2000,:,:,:]        
@@ -232,7 +232,7 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 
 def NN_training(generator, discriminator, data_path, data_path1, logdir):
     EPOCHS = 1600
-    batch_size = 1
+    batch_size = 100
     runid = 'PHY_Net_x' + str(np.random.randint(10000))
     print(f"RUNID: {runid}")
     Mod_order = 2
@@ -363,7 +363,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
         D_loss.reset_states()     
         accuracy.reset_states()        
         count = 0
-        start_time = time.time()
+        #start_time = time.time()
         #print('epoch =',epoch)
         for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1,snr in test_data:
             # same as training 
@@ -385,7 +385,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
 
             classification_result = tf.math.argmax(generated_out,axis = 2)
             #tf.print('Gen_out = ',classification_result)
-            """
+            
             classifcation_np = np.array(tf.cast(classification_result,tf.uint8))
             label_np = np.array(tf.cast(tf.squeeze(Label_input,axis = 2),tf.uint8))
             label1_np = np.array(tf.cast(tf.squeeze(Label1_input,axis = 2),tf.uint8))
@@ -429,7 +429,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            if epoch == 15:              
+            if epoch == 25:              
                 #print("Save mat")
                 scipy.io.savemat('MAT_OUT_BPSK/data%d.mat'%count, {'data': classifcation_np})
                 scipy.io.savemat('MAT_OUT_BPSK/label%d.mat'%count, {'label': label_np})
@@ -454,7 +454,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
                     tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)                 
-                    if epoch == 15:
+                    if epoch == 25:
                         generator.save_weights(os.path.join('saved_models/BPSK', runid + '.tf'))
                    
                     G_loss.reset_states()       
@@ -463,8 +463,8 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     #tf.print(tf.math.reduce_max(testing_accuracy))
                     testing_accuracy = 0
                     total_bit_error = 0
-        """    
-        print('Inferencing time for 10k frames:', time.time() - start_time)
+            
+        #print('Inferencing time for 10k frames:', time.time() - start_time)
         
 if __name__ == "__main__":
-    get_processed_dataset("BPSK")
+    get_processed_dataset("BPSK_full")
