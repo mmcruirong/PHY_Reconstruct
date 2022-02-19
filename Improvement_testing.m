@@ -1,6 +1,6 @@
 close all
 clear
-MODE_ORDER = 1;% BPSK = 1 QPSK =2 16QAM = 4
+MODE_ORDER = 6;% BPSK = 1 QPSK =2 16QAM = 4 64QAM = 6
 
 %file names
 %Testing set names
@@ -13,18 +13,25 @@ MODE_ORDER = 1;% BPSK = 1 QPSK =2 16QAM = 4
 %/home/labuser/payload_reconstruction/test_results/OtherWiFi/16QAM_Origin/
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM_Origin
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM
-for j = 1:100
-    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/data', num2str(j-1), '.mat'];
-    snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/sinr', num2str(j-1), '.mat'];
 
-    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/label', num2str(j-1), '.mat'];
-    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK/data', num2str(j-1), '.mat'];
-    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK/label', num2str(j-1), '.mat'];
+load('/home/labuser/payload_reconstruction/FRR/64QAM.mat');
+
+
+for j = 1:100
+    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM_Origin/data', num2str(j-1), '.mat'];
+    snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM_Origin/sinr', num2str(j-1), '.mat'];
+
+    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM_Origin/label', num2str(j-1), '.mat'];
+    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM/data', num2str(j-1), '.mat'];
+    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM/label', num2str(j-1), '.mat'];
+    
     load(dataname_origin)
     load(labelname_origin)
     load(dataname)
     load(labelname)
     load(snr_name)
+    
+    
     for frame_index = 1:100
         data_reshape = data(1+40*(frame_index-1):40+40*(frame_index-1),:);
         label_reshape = label(1+40*(frame_index-1):40+40*(frame_index-1),:);
@@ -79,59 +86,124 @@ Accepted_frame = zeros(30,3);
 BER_SINR = zeros(30,2);
 %% Find SINR VS FRR VS BER
 for incremental = 1:30
-    [a1,b1]= find((SINR(:) >= (floor(min(min(SINR)))+incremental+20)) & (SINR(:) <= (floor(min(min(SINR)))+incremental+1+20)));
+    [a1,b1]= find((SINR(:) >= (-2 +incremental)) & (SINR(:) <= (-1 +incremental)));
     BER_origin_array1 = BER_origin_array(a1,1);
-    BER_array1 = BER_array(a1,1);
-    BER_SINR(incremental,1) = mean(BER_origin_array1);
-    BER_SINR(incremental,2) = mean(BER_array1);    
-    Accepted_frame(incremental,3) = length(find(BER_array1<3))/length(a1);
+    BER_array1 = BER_array(a1,1);   
+    if isempty(a1) %|| (length(a1)<=50)
+        Accepted_frame(incremental,3) = 1;
+        BER_improve(incremental) = 0;
+        BER_SINR(incremental,1) = 0;
+        BER_SINR(incremental,2) = 0;
+    else
+        BER_SINR(incremental,1) = mean(BER_origin_array1);
+        BER_SINR(incremental,2) = mean(BER_array1);
+        Accepted_frame(incremental,3) = length(find(BER_array1<3))/length(a1);
+        BER_improve(incremental) = (mean(BER_origin_array1)-mean(BER_array1))/mean(BER_origin_array1);
+
+    end    
     Accepted_frame(incremental,1) = length(a1)/10000;
-    BER_improve(incremental) = (mean(BER_origin_array1)-mean(BER_array1))/mean(BER_origin_array1);
-    x(incremental) = floor(min(min(SINR)))+incremental+20;
-end
-loss = zeros(20,1);
-for k = 1:19
-    loss(k+1) = Accepted_frame(31-k,1) +  loss(k,1);
+    x(incremental) = -1 +incremental;
 end
 
-Theory_Throughput = 9.5*10^4./(sqrt(loss*0.5));
-Theory_Throughput(8:end) = 0;
-Throughput = 9.5*10^4./(1.1*sqrt(loss*0.1.*(1-Accepted_frame(11:30,2))));
+
+FRR = ones(30,1);
+FRR(1,1) = FRR_0;
+FRR(2,1) = FRR_1;
+FRR(3,1) = FRR_2;
+FRR(4,1) = FRR_3;
+FRR(5,1) = FRR_4;
+FRR(6,1) = FRR_5;
+FRR(7,1) = FRR_6;
+FRR(8,1) = FRR_7;
+FRR(9,1) = FRR_8;
+FRR(10,1) = FRR_9;
+FRR(11,1) = FRR_10;
+FRR(12,1) = FRR_11;
+FRR(13,1) = FRR_12;
+FRR(14,1) = FRR_13;
+FRR(15,1) = FRR_14;
+FRR(16,1) = FRR_15;
+FRR(17,1) = FRR_16;
+FRR(18,1) = FRR_17;
+FRR(19,1) = FRR_18;
+FRR(20,1) = FRR_19;
+FRR(21,1) = FRR_20;
+FRR(22,1) = FRR_21;
+FRR(23,1) = FRR_22;
+
+FRR_after = (1-FRR).*Accepted_frame(:,3) + FRR;
+
+FRR_compare = [FRR,FRR_after];
+FRR_Improve = (FRR_after - FRR)./FRR;
+% 
+% loss = zeros(20,1);
+% for k = 1:19
+%     loss(k+1) = Accepted_frame(31-k,1) +  loss(k,1);
+% end
+% 
+% Theory_Throughput = 9.5*10^4./(sqrt(loss*0.5));
+% Theory_Throughput(8:end) = 0;
+% Throughput = 9.5*10^4./(1.1*sqrt(loss*0.1.*(1-Accepted_frame(11:30,2))));
 
 figure(1)
-plot(x,BER_improve,'LineWidth',5)
-xlabel('SINR','FontSize',24);
+plot(x,BER_improve*100,'LineWidth',5)
+xlabel('SINR(dB)','FontSize',24);
 ylabel('BER Improvment(%)','FontSize',24);
-xlim([-2.5,6])
-xticks([-2 -1 0 1 2 3 4 5 6])
+
+xlim([-1.5,22.5])%BPSK
+%xticks([-2 -1 0 1 2 3 4 ])%BPSK
+%xlim([13.5,20.5])%64QAM
+%xticks([14 15 16 17 18 19 20])%64QAM
 set(gca,'FontSize',24)
 figure(2)
-plot(x,Accepted_frame(:,3),'LineWidth',5)
-xlabel('SINR','FontSize',24);
-ylabel('FRR Improvment(%)','FontSize',24);
-xlim([-2.5,6])
-xticks([-2 -1 0 1 2 3 4 5 6])
+plot(x,Accepted_frame(:,3)*100,'LineWidth',5)
+xlabel('SINR(dB)','FontSize',24);
+ylabel('Failed frame corrected(%)','FontSize',24);
+xlim([-1.5,22.5])%BPSK
+%xticks([-2 -1 0 1 2 3 4 ])%BPSK
+%xlim([13.5,20.5]) %64QAM
+%xticks([14 15 16 17 18 19 20])%64QAM
+%xticks([-2 -1 0 1 2 3 4 ])
+
 set(gca,'FontSize',24)
 
 figure(3)
-bar(x,Accepted_frame(:,2:3))
-xlabel('SINR','FontSize',24);
-ylabel('FRR','FontSize',24);
-xlim([-2.5,6.5])
-xticks([-2 -1 0 1 2 3 4 5 6])
+bar(x,FRR_compare*100)
+xlabel('SINR(dB)','FontSize',24);
+ylabel('FRR(%)','FontSize',24);
+
+xlim([-1.5,22.5])%BPSK
+%xticks([-2 -1 0 1 2 3 4]) %BPSK
+%xlim([13.5,20.5])%64QAM
+%xticks([14 15 16 17 18 19 20])%64QAM
+
 legend('Before NN','After NN')
 set(gca,'FontSize',24)
 
 
 figure(4)
-bar(x,BER_SINR)
-xlabel('SINR','FontSize',24);
-ylabel('BER','FontSize',24);
-xlim([-2.5,6.5])
-xticks([-2 -1 0 1 2 3 4 5 6])
+bar(x,BER_SINR/length(label_frame))
+xlabel('SINR(dB)','FontSize',24);
+ylabel('BER(%)','FontSize',24);
+xlim([-1.5,22.5])%BPSK
+%xticks([-2 -1 0 1 2 3 4 ]) %BPSK
+%xlim([13.5,20.5])% 64QAM
+%xticks([14 15 16 17 18 19 20]) % 64QAM
 legend('Before NN','After NN')
 
 set(gca,'FontSize',24)
+
+figure(5)
+plot(x,FRR_Improve*100,'LineWidth',5)
+xlabel('SINR(dB)','FontSize',24);
+ylabel('FRR Improvment(%)','FontSize',24);
+xlim([-1.5,22.5])%BPSK
+%xticks([-2 -1 0 1 2 3 4 ]) %BPSK
+%xlim([13.5,20.5])% 64QAM
+%xticks([14 15 16 17 18 19 20]) % 64QAM
+
+set(gca,'FontSize',24)
+
 
 figure(5)
 plot(x(11:30),flip(Theory_Throughput),x(11:30),flip(Throughput),'LineWidth',5)
