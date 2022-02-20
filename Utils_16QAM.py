@@ -440,19 +440,19 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #tf.print('Testing ACC = ',accuracy.result())
             testing_accuracy = accuracy.result() + testing_accuracy
             
-            if epoch == 34:              
+            #if epoch == 34:              
                 #print("Save mat")
-                scipy.io.savemat('MAT_OUT_16QAM/data%d.mat'%count, {'data': classifcation_np})
-                scipy.io.savemat('MAT_OUT_16QAM/label%d.mat'%count, {'label': label_np})
+                #scipy.io.savemat('MAT_OUT_16QAM/data%d.mat'%count, {'data': classifcation_np})
+                #scipy.io.savemat('MAT_OUT_16QAM/label%d.mat'%count, {'label': label_np})
                 #print('BER = ', bit_error)
                 
             
-            if epoch == 0:
+            #if epoch == 0:
             
                 #print("Save mat")
-                scipy.io.savemat('MAT_OUT_16QAM_Origin/data%d.mat'%count, {'data_origin': label1_np})
-                scipy.io.savemat('MAT_OUT_16QAM_Origin/label%d.mat'%count, {'label_origin': label_np})
-                scipy.io.savemat('MAT_OUT_16QAM_Origin/sinr%d.mat'%count, {'sinr': sinr})
+                #scipy.io.savemat('MAT_OUT_16QAM_Origin/data%d.mat'%count, {'data_origin': label1_np})
+                #scipy.io.savemat('MAT_OUT_16QAM_Origin/label%d.mat'%count, {'label_origin': label_np})
+                #scipy.io.savemat('MAT_OUT_16QAM_Origin/sinr%d.mat'%count, {'sinr': sinr})
 
             count = count +1
 
@@ -465,8 +465,8 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
                     tf.summary.scalar('test/acc', tf.divide(testing_accuracy,100), training_step)
                     tf.summary.scalar('test/d_loss', D_loss.result(), training_step)
                     tf.summary.scalar('test/BER',  tf.divide(total_bit_error,100), training_step)
-                    if epoch == 34:
-                        generator.save_weights(os.path.join('saved_models/16QAM', runid + '.tf'))
+                    #if epoch == 34:
+                        #generator.save_weights(os.path.join('saved_models/16QAM', runid + '.tf'))
                 
                     G_loss.reset_states()       
                     D_loss.reset_states()                                 

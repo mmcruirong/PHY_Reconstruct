@@ -1,6 +1,6 @@
 close all
 clear
-MODE_ORDER = 6;% BPSK = 1 QPSK =2 16QAM = 4 64QAM = 6
+MODE_ORDER = 2;% BPSK = 1 QPSK =2 16QAM = 4 64QAM = 6
 
 %file names
 %Testing set names
@@ -17,13 +17,13 @@ MODE_ORDER = 6;% BPSK = 1 QPSK =2 16QAM = 4 64QAM = 6
 load('/home/labuser/payload_reconstruction/FRR/64QAM.mat');
 
 
-for j = 1:100
-    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM_Origin/data', num2str(j-1), '.mat'];
-    snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM_Origin/sinr', num2str(j-1), '.mat'];
+for j = 1:150
+    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK_Origin/data', num2str(j-1), '.mat'];
+    snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK_Origin/sinr', num2str(j-1), '.mat'];
 
-    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM_Origin/label', num2str(j-1), '.mat'];
-    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM/data', num2str(j-1), '.mat'];
-    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_64QAM/label', num2str(j-1), '.mat'];
+    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK_Origin/label', num2str(j-1), '.mat'];
+    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK/data', num2str(j-1), '.mat'];
+    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK/label', num2str(j-1), '.mat'];
     
     load(dataname_origin)
     load(labelname_origin)
@@ -74,8 +74,10 @@ difference_before = (sum(sum(BER_before_origin)) - sum(sum(BER_before)))./(sum(s
 
 length(find(BER <=2))
 length(find(BER_origin <=1))
-Average_BER_original = (sum(sum(BER_origin))/(10000*3840));
-Average_BER = (sum(sum(BER))/(10000*3840));
+Average_BER_original = (sum(sum(BER_origin))/(10000*length(label_frame)));
+Average_BER_original_before = (sum(sum(BER_before_origin))/(10000*length(label_frame)));
+
+Average_BER = (sum(sum(BER))/(10000*length(label_frame)));
 
 [a,b] = find(BER_origin(:) <=40);
 BER_array = BER(:);
