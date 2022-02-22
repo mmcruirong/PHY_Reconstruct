@@ -127,7 +127,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER))
     print('SER =', np.mean(SNR))
 
-    np.savez_compressed("PHY_dataset_OW16", 
+    np.savez_compressed("PHY_dataset_TEST", 
                         csi_test=CSI,
                         pilot_test=PILOT,
                         phy_payload_test=PHY_PAYLOAD,
@@ -205,15 +205,15 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 
 def NN_Testing(generator,  test_path, test_path1, logdir):
     testing_model = generator
-    Mod_order = 16
+    Mod_order = 4
     batch_size = 100
     count = 0
     modulation = '16QAM'
-    Interferece = 'OtherWiFi/'  #Whitenoise #OtherWiFi
+    Interferece = 'Microwave/'  #Whitenoise #OtherWiFi
     if Mod_order ==2:    
         testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x7477.tf'))
     elif Mod_order ==4:   
-        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x5819.tf'))
+        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x4966.tf'))
     elif Mod_order ==16:
         testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x3756.tf'))
     elif Mod_order ==64:
@@ -265,4 +265,4 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
 
        
 if __name__ == "__main__":
-    get_processed_dataset("test_dataset/OtherWiFi/16QAM")
+    get_processed_dataset("test_dataset/QPSK")

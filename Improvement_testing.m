@@ -1,6 +1,11 @@
+%% FOr evaluation purpose 
+%  BER/FRR evaluation based on testing data
+%  Ruirong Chen 
+%  University of pittsburgh
+
 close all
 clear
-MODE_ORDER = 2;% BPSK = 1 QPSK =2 16QAM = 4 64QAM = 6
+MODE_ORDER = 1;% BPSK = 1 QPSK =2 16QAM = 4 64QAM = 6
 
 %file names
 %Testing set names
@@ -14,16 +19,22 @@ MODE_ORDER = 2;% BPSK = 1 QPSK =2 16QAM = 4 64QAM = 6
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM_Origin
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM
 
-load('/home/labuser/payload_reconstruction/FRR/64QAM.mat');
+load('/home/labuser/payload_reconstruction/FRR/BPSK.mat');
 
 
-for j = 1:150
-    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK_Origin/data', num2str(j-1), '.mat'];
-    snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK_Origin/sinr', num2str(j-1), '.mat'];
-
-    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK_Origin/label', num2str(j-1), '.mat'];
-    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK/data', num2str(j-1), '.mat'];
-    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_QPSK/label', num2str(j-1), '.mat'];
+for j = 1:100
+    %dataname_origin = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_Origin/data', num2str(j-1), '.mat'];
+    %snr_name = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_Origin/sinr', num2str(j-1), '.mat'];
+    %labelname_origin = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_Origin/label', num2str(j-1), '.mat'];
+    %dataname = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_After/data', num2str(j-1), '.mat'];
+    %labelname = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_After/label', num2str(j-1), '.mat'];
+    
+    
+    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/data', num2str(j-1), '.mat'];
+    snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/sinr', num2str(j-1), '.mat'];
+    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/label', num2str(j-1), '.mat'];
+    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK/data', num2str(j-1), '.mat'];
+    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK/label', num2str(j-1), '.mat'];
     
     load(dataname_origin)
     load(labelname_origin)
@@ -64,10 +75,10 @@ for j = 1:150
     end
 
 end
-difference_map = (sum(sum(BER_origin))-sum(sum(BER)))./(sum(sum(BER_origin)));
+Corrected_bits = (sum(sum(BER_origin))-sum(sum(BER)))./(sum(sum(BER_origin)));
 %difference_map_mean = mean(difference_map(difference_map~= 0 & isfinite(difference_map)));
 
-difference_before = (sum(sum(BER_before_origin)) - sum(sum(BER_before)))./(sum(sum(BER_before_origin)));
+Corrected_bits_before = (sum(sum(BER_before_origin)) - sum(sum(BER_before)))./(sum(sum(BER_before_origin)));
 %difference_before_mean= mean(difference_before(difference_before~= 0 & isfinite(difference_before)));
 
 [BER;BER_origin];
@@ -76,6 +87,7 @@ length(find(BER <=2))
 length(find(BER_origin <=1))
 Average_BER_original = (sum(sum(BER_origin))/(10000*length(label_frame)));
 Average_BER_original_before = (sum(sum(BER_before_origin))/(10000*length(label_frame)));
+Average_BER_before = (sum(sum(BER_before))/(10000*length(label_frame)));
 
 Average_BER = (sum(sum(BER))/(10000*length(label_frame)));
 
@@ -184,7 +196,7 @@ set(gca,'FontSize',24)
 
 
 figure(4)
-bar(x,BER_SINR/length(label_frame))
+bar(x,BER_SINR/length(label_frame)*100)
 xlabel('SINR(dB)','FontSize',24);
 ylabel('BER(%)','FontSize',24);
 xlim([-1.5,22.5])%BPSK
@@ -203,7 +215,6 @@ xlim([-1.5,22.5])%BPSK
 %xticks([-2 -1 0 1 2 3 4 ]) %BPSK
 %xlim([13.5,20.5])% 64QAM
 %xticks([14 15 16 17 18 19 20]) % 64QAM
-
 set(gca,'FontSize',24)
 
 
