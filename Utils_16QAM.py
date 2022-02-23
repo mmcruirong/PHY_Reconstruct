@@ -128,7 +128,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER[test_indices, :, :]))
     print('SNR =', np.mean(SNR[test_indices, :, :]))
 
-    np.savez_compressed("PHY_dataset_16QAMfull_" + str(split), 
+    np.savez_compressed("PHY_dataset_16QAMfull1_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -198,10 +198,10 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         #groundtruth_test1 = data['groundtruth_test'].astype(np.float32)
         #label_test1 = data['label_test'].astype(np.float32)
         #label1_test1 = data['label1_test'].astype(np.float32)
-    csi_train1 = csi_train1[20000:60000,:,:,:]
-    pilot_train1 = pilot_train1[20000:60000,:,:,:]
-    csi_test1 = csi_train1[0:10000,:,:,:]    
-    pilot_test1 = pilot_train1[0:10000,:,:,:]  
+    csi_train1 = csi_train1[20000:81600,:,:,:]
+    pilot_train1 = pilot_train1[20000:81600,:,:,:]
+    csi_test1 = csi_train1[0:15400,:,:,:]    
+    pilot_test1 = pilot_train1[0:15400,:,:,:]  
     #print('PHY SHAPE 1= ',csi_test1.shape)
     #print('PHY SHAPE = ',csi_test.shape)
     #csi_test1 = csi_test1[1000:2000,:,:,:]        
@@ -442,17 +442,17 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             
             if epoch == 60:              
                 #print("Save mat")
-                scipy.io.savemat('MAT_OUT_16QAM/data%d.mat'%count, {'data': classifcation_np})
-                scipy.io.savemat('MAT_OUT_16QAM/label%d.mat'%count, {'label': label_np})
+                scipy.io.savemat('MAT_OUT_16QAM_full/data%d.mat'%count, {'data': classifcation_np})
+                scipy.io.savemat('MAT_OUT_16QAM_full/label%d.mat'%count, {'label': label_np})
                 #print('BER = ', bit_error)
                 
             
             if epoch == 0:
             
                 #print("Save mat")
-                scipy.io.savemat('MAT_OUT_16QAM_Origin/data%d.mat'%count, {'data_origin': label1_np})
-                scipy.io.savemat('MAT_OUT_16QAM_Origin/label%d.mat'%count, {'label_origin': label_np})
-                scipy.io.savemat('MAT_OUT_16QAM_Origin/sinr%d.mat'%count, {'sinr': sinr})
+                scipy.io.savemat('MAT_OUT_16QAM_Origin_full/data%d.mat'%count, {'data_origin': label1_np})
+                scipy.io.savemat('MAT_OUT_16QAM_Origin_full/label%d.mat'%count, {'label_origin': label_np})
+                scipy.io.savemat('MAT_OUT_16QAM_Origin_full/sinr%d.mat'%count, {'sinr': sinr})
 
             count = count +1
 

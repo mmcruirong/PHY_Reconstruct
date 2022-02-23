@@ -128,7 +128,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER[test_indices, :, :]))
     print('SNR =', np.mean(SNR[test_indices, :, :]))
 
-    np.savez_compressed("PHY_dataset_QPSKfull_" + str(split), 
+    np.savez_compressed("PHY_dataset_QPSKfull1_" + str(split), 
                         csi_train=CSI[train_indices, :, :, :],
                         pilot_train=PILOT[train_indices, :, :, :],
                         phy_payload_train=PHY_PAYLOAD[train_indices, :, :, :],
@@ -442,17 +442,17 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             
             if epoch == 34:              
                 #print("Save mat")
-                scipy.io.savemat('MAT_OUT_QPSK/data%d.mat'%count, {'data': classifcation_np})
-                scipy.io.savemat('MAT_OUT_QPSK/label%d.mat'%count, {'label': label_np})
+                scipy.io.savemat('MAT_OUT_QPSK_full/data%d.mat'%count, {'data': classifcation_np})
+                scipy.io.savemat('MAT_OUT_QPSK_full/label%d.mat'%count, {'label': label_np})
                 #print('BER = ', bit_error)
                 
             
             if epoch == 0:
             
                 #print("Save mat")
-                scipy.io.savemat('MAT_OUT_QPSK_Origin/data%d.mat'%count, {'data_origin': label1_np})
-                scipy.io.savemat('MAT_OUT_QPSK_Origin/label%d.mat'%count, {'label_origin': label_np})
-                scipy.io.savemat('MAT_OUT_QPSK_Origin/sinr%d.mat'%count, {'sinr': sinr})
+                scipy.io.savemat('MAT_OUT_QPSK_Origin_full/data%d.mat'%count, {'data_origin': label1_np})
+                scipy.io.savemat('MAT_OUT_QPSK_Origin_full/label%d.mat'%count, {'label_origin': label_np})
+                scipy.io.savemat('MAT_OUT_QPSK_Origin_full/sinr%d.mat'%count, {'sinr': sinr})
 
             count = count +1
 

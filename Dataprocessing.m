@@ -2,9 +2,9 @@
 close all
 clear all
 %load('/home/labuser/payload_reconstruction/BPSK_NoInter/payload_18.mat')
-load('/home/labuser/payload_reconstruction/test_dataset/QPSK/payload_11.mat')
+load('/home/labuser/payload_reconstruction/test_dataset/microwave/BPSK/payload_MC.mat')
 
-CSI = dataset1.CSI
+
 dataset1.save_pilots = [pilots(1:10,:);pilots(1:40,:);pilots];
 
 
