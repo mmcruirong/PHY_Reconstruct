@@ -7,6 +7,7 @@ close all
 clear
 MODE_ORDER = 1;% BPSK = 1 QPSK =2 16QAM = 4 64QAM = 6
 
+Modulation = 'BPSK';
 %file names
 %Testing set names
 
@@ -19,10 +20,10 @@ MODE_ORDER = 1;% BPSK = 1 QPSK =2 16QAM = 4 64QAM = 6
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM_Origin
 %/home/labuser/payload_reconstruction/MAT_OUT_16QAM
 
-load('/home/labuser/payload_reconstruction/FRR/BPSK.mat');
+load(['/home/labuser/payload_reconstruction/FRR/',Modulation,'.mat']);
 
 
-for j = 1:100
+for j = 1:144
     %dataname_origin = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_Origin/data', num2str(j-1), '.mat'];
     %snr_name = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_Origin/sinr', num2str(j-1), '.mat'];
     %labelname_origin = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_Origin/label', num2str(j-1), '.mat'];
@@ -30,11 +31,11 @@ for j = 1:100
     %labelname = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_After/label', num2str(j-1), '.mat'];
     
     
-    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/data', num2str(j-1), '.mat'];
-    snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/sinr', num2str(j-1), '.mat'];
-    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK_Origin/label', num2str(j-1), '.mat'];
-    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK/data', num2str(j-1), '.mat'];
-    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_BPSK/label', num2str(j-1), '.mat'];
+    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_Origin_full/data', num2str(j-1), '.mat'];
+    snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_Origin_full/sinr', num2str(j-1), '.mat'];
+    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_Origin_full/label', num2str(j-1), '.mat'];
+    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_full/data', num2str(j-1), '.mat'];
+    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_full/label', num2str(j-1), '.mat'];
     
     load(dataname_origin)
     load(labelname_origin)
@@ -103,7 +104,7 @@ for incremental = 1:30
     [a1,b1]= find((SINR(:) >= (-2 +incremental)) & (SINR(:) <= (-1 +incremental)));
     BER_origin_array1 = BER_origin_array(a1,1);
     BER_array1 = BER_array(a1,1);   
-    if isempty(a1) %|| (length(a1)<=50)
+    if  (length(a1)<=50) %isempty(a1) %||
         Accepted_frame(incremental,3) = 0;
         BER_improve(incremental) = 0;
         BER_SINR(incremental,1) = 0;
@@ -111,7 +112,7 @@ for incremental = 1:30
     else
         BER_SINR(incremental,1) = mean(BER_origin_array1);
         BER_SINR(incremental,2) = mean(BER_array1);
-        Accepted_frame(incremental,3) = length(find(BER_array1<3))/length(a1);
+        Accepted_frame(incremental,3) = length(find(BER_array1<2))/length(a1);
         BER_improve(incremental) = (mean(BER_origin_array1)-mean(BER_array1))/mean(BER_origin_array1);
 
     end    
@@ -164,7 +165,7 @@ plot(x,BER_improve*100,'LineWidth',5)
 xlabel('SINR(dB)','FontSize',24);
 ylabel('BER Improvment(%)','FontSize',24);
 
-xlim([-1.5,22.5])%BPSK
+xlim([0,25])%BPSK
 %xticks([-2 -1 0 1 2 3 4 ])%BPSK
 %xlim([13.5,20.5])%64QAM
 %xticks([14 15 16 17 18 19 20])%64QAM
@@ -173,7 +174,7 @@ figure(2)
 plot(x,Accepted_frame(:,3)*100,'LineWidth',5)
 xlabel('SINR(dB)','FontSize',24);
 ylabel('Failed frame corrected(%)','FontSize',24);
-xlim([-1.5,22.5])%BPSK
+xlim([0,25])%BPSK
 %xticks([-2 -1 0 1 2 3 4 ])%BPSK
 %xlim([13.5,20.5]) %64QAM
 %xticks([14 15 16 17 18 19 20])%64QAM
@@ -186,7 +187,7 @@ bar(x,FRR_compare*100)
 xlabel('SINR(dB)','FontSize',24);
 ylabel('FRR(%)','FontSize',24);
 
-xlim([-1.5,22.5])%BPSK
+xlim([-1.5,25.5])%BPSK
 %xticks([-2 -1 0 1 2 3 4]) %BPSK
 %xlim([13.5,20.5])%64QAM
 %xticks([14 15 16 17 18 19 20])%64QAM
@@ -199,7 +200,7 @@ figure(4)
 bar(x,BER_SINR/length(label_frame)*100)
 xlabel('SINR(dB)','FontSize',24);
 ylabel('BER(%)','FontSize',24);
-xlim([-1.5,22.5])%BPSK
+xlim([-1.5,25.5])%BPSK
 %xticks([-2 -1 0 1 2 3 4 ]) %BPSK
 %xlim([13.5,20.5])% 64QAM
 %xticks([14 15 16 17 18 19 20]) % 64QAM
@@ -211,21 +212,21 @@ figure(5)
 plot(x,FRR_Improve*100,'LineWidth',5)
 xlabel('SINR(dB)','FontSize',24);
 ylabel('FRR Improvment(%)','FontSize',24);
-xlim([-1.5,22.5])%BPSK
+xlim([0,25])%BPSK
 %xticks([-2 -1 0 1 2 3 4 ]) %BPSK
 %xlim([13.5,20.5])% 64QAM
 %xticks([14 15 16 17 18 19 20]) % 64QAM
 set(gca,'FontSize',24)
 
 
-figure(5)
-plot(x(11:30),flip(Theory_Throughput),x(11:30),flip(Throughput),'LineWidth',5)
-xlabel('SINR','FontSize',24);
-ylabel('Throughput','FontSize',24);
-xlim([-2,5])
-legend('Before NN','After NN')
-set(gca,'FontSize',24)
-
-dataset1.CSI = data_set.CSI;
-dataset1.Pilot = data_set.Pilots;
-dataset1.Constellation = data_set.Constallation;
+% figure(5)
+% plot(x(11:30),flip(Theory_Throughput),x(11:30),flip(Throughput),'LineWidth',5)
+% xlabel('SINR','FontSize',24);
+% ylabel('Throughput','FontSize',24);
+% xlim([-2,5])
+% legend('Before NN','After NN')
+% set(gca,'FontSize',24)
+% 
+% dataset1.CSI = data_set.CSI;
+% dataset1.Pilot = data_set.Pilots;
+% dataset1.Constellation = data_set.Constallation;

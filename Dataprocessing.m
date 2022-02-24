@@ -1,15 +1,15 @@
 %close all
 close all
 clear all
-%load('/home/labuser/payload_reconstruction/BPSK_NoInter/payload_18.mat')
-load('/home/labuser/payload_reconstruction/test_dataset/microwave/BPSK/payload_MC.mat')
-
-
-dataset1.save_pilots = [pilots(1:10,:);pilots(1:40,:);pilots];
-
-
-data_ind = [2:7 9:21 23:27 39:43 45:57 59:64];
-x = 1:48;
+load('/home/labuser/payload_reconstruction/BPSK/payload_1.mat')
+% load('/home/labuser/payload_reconstruction/test_dataset/microwave/BPSK/payload_MC.mat')
+% 
+% 
+% dataset1.save_pilots = [pilots(1:10,:);pilots(1:40,:);pilots];
+% 
+% 
+ data_ind = [2:7 9:21 23:27 39:43 45:57 59:64];
+ x = 1:48;
 x_p = 1:40;
 error_table = zeros(48,1);
 error_table_64 = zeros(64,1);
@@ -18,19 +18,19 @@ fft_pilot_sum = zeros(64,40);
 CSI_threshold = 0;
 Reorganized_CSI_sum = zeros(1,48);
 count=0;
-snr = cell(5000,1);
-for i = 1:5000
-    payload_syms_mat = data_set.Constallation{i,1};
-    pilots =  data_set.Pilots{i,1};
-    tx_syms_mat = data_set.Txpayload{i,1};   
-    evm_mat = abs(payload_syms_mat - tx_syms_mat).^2;
-	aevms = mean(evm_mat(:));
-	snr{i,1} = 10*log10(1./aevms);
-end
-dataset1.save_pilots = [pilots(1:10,:);pilots(1:40,:);pilots];
-dataset1.save_payload = [payload_syms_mat(1:10*48,:);payload_syms_mat(1:40*48,:);payload_syms_mat];
-dataset1.save_CSI = data_set.CSI{1,1};
-data_set.SNR = snr;
+% snr = cell(5000,1);
+% for i = 1:5000
+%     payload_syms_mat = data_set.Constallation{i,1};
+%     pilots =  data_set.Pilots{i,1};
+%     tx_syms_mat = data_set.Txpayload{i,1};   
+%     evm_mat = abs(payload_syms_mat - tx_syms_mat).^2;
+% 	aevms = mean(evm_mat(:));
+% 	snr{i,1} = 10*log10(1./aevms);
+% end
+% dataset1.save_pilots = [pilots(1:10,:);pilots(1:40,:);pilots];
+% dataset1.save_payload = [payload_syms_mat(1:10*48,:);payload_syms_mat(1:40*48,:);payload_syms_mat];
+% dataset1.save_CSI = data_set.CSI{1,1};
+% data_set.SNR = snr;
 
 
 %% This part is for finding pattern

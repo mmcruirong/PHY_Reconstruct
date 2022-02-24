@@ -127,7 +127,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER))
     print('SER =', np.mean(SNR))
 
-    np.savez_compressed("PHY_dataset_MC64",  #MC = Microwave ZB = Zigbee
+    np.savez_compressed("PHY_dataset_TEST", 
                         csi_test=CSI,
                         pilot_test=PILOT,
                         phy_payload_test=PHY_PAYLOAD,
@@ -208,31 +208,34 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
     Mod_order = 4
     batch_size = 100
     count = 0
+    frame_length = 10
+    frame_length_idx = '10'
+
     modulation = '16QAM'
-    Interferece = 'Microwave/'  #Whitenoise #OtherWiFi #Zigbee #Microwave
+    Interferece = 'Microwave/'  #Whitenoise #OtherWiFi
     if Mod_order ==2:    
-        testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x2279.tf'))
+        testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x7477.tf'))
     elif Mod_order ==4:   
-        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x9106.tf'))
+        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x4966.tf'))
     elif Mod_order ==16:
-        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x8756.tf'))
+        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x3756.tf'))
     elif Mod_order ==64:
-        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x9269.tf'))
+        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x3756.tf'))
     print('weights loaded')    
     test_data = load_processed_dataset(test_path, test_path1,5000, batch_size, batch_size)
     #start_time = time.time()
     for csi, pilot,phy_payload,groundtruth, label, label1,csi1, pilot1,snr in test_data:
-        Csi_duplicate = tf.repeat(csi,40,axis=0)            
-        Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[40*batch_size,48,1,2]),axis = 2)
-        Pilot_input = tf.squeeze(tf.reshape(pilot,[40*batch_size,4,1,2]),axis = 2)
-        PHY_input = tf.squeeze(tf.reshape(phy_payload,[40*batch_size,48,1,2]),axis = 2)
-        Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[40*batch_size,48,1,2]),axis = 2)
-        Label_input = tf.squeeze(tf.reshape(label,[40*batch_size,48,1,1]),axis = 2)
-        Label1_input = tf.squeeze(tf.reshape(label1,[40*batch_size,48,1,1]),axis = 2)
+        Csi_duplicate = tf.repeat(csi,frame_length,axis=0)            
+        Csi_input = tf.squeeze(tf.reshape(Csi_duplicate,[frame_length*batch_size,48,1,2]),axis = 2)
+        Pilot_input = tf.squeeze(tf.reshape(pilot,[frame_length*batch_size,4,1,2]),axis = 2)
+        PHY_input = tf.squeeze(tf.reshape(phy_payload,[frame_length*batch_size,48,1,2]),axis = 2)
+        Groundtruth_input = tf.squeeze(tf.reshape(groundtruth,[frame_length*batch_size,48,1,2]),axis = 2)
+        Label_input = tf.squeeze(tf.reshape(label,[frame_length*batch_size,48,1,1]),axis = 2)
+        Label1_input = tf.squeeze(tf.reshape(label1,[frame_length*batch_size,48,1,1]),axis = 2)
         
-        Csi_duplicate1 = tf.repeat(csi1,40,axis=0)       
-        Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
-        Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
+        Csi_duplicate1 = tf.repeat(csi1,frame_length,axis=0)       
+        Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[frame_length*batch_size,48,1,2]),axis = 2)
+        Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[frame_length*batch_size,4,1,2]),axis = 2)
         #print('SNR shape = ',snr.shape)
         generated_out = testing_model([Csi_input, Pilot_input,Csi_input1, Pilot_input1,PHY_input,Groundtruth_input])
         #tf.print('Gen_out = ',generated_out[1,1,:])
@@ -245,19 +248,19 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         label1_np = np.array(tf.cast(tf.squeeze(Label1_input,axis = 2),tf.uint8))
         classification_bin = np.unpackbits(classifcation_np,axis =1).astype(int)
         label_bin = np.unpackbits(label_np,axis =1).astype(int)
-        bit_error = np.sum(np.abs(label_bin - classification_bin))/(batch_size*40*48*np.log2(Mod_order))
+        bit_error = np.sum(np.abs(label_bin - classification_bin))/(batch_size*frame_length*48*np.log2(Mod_order))
         sinr = np.array(snr)
 
         
         
-        scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/data%d.mat'%count, {'data': classifcation_np})
-        scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/label%d.mat'%count, {'label': label_np})
-        scipy.io.savemat('test_results/'+Interferece + modulation+'_Origin/sinr%d.mat'%count, {'sinr': sinr})
+        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + '_Origin/data_' + '%d.mat'%count, {'data': classifcation_np})
+        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + '_Origin/label%d.mat'%count, {'label': label_np})
+        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + '_Origin/sinr%d.mat'%count, {'sinr': sinr})
         
        
         #print("Save mat")
-        scipy.io.savemat('test_results/'+Interferece + modulation+'_After/data%d.mat'%count, {'data_origin': label1_np})
-        scipy.io.savemat('test_results/'+Interferece + modulation+'_After/label%d.mat'%count, {'label_origin': label_np})
+        scipy.io.savemat('test_results/'+Interferece+'/' + frame_length_idx+'/' + '_After/data%d.mat'%count, {'data_origin': label1_np})
+        scipy.io.savemat('test_results/'+Interferece+'/' + frame_length_idx+'/' + '_After/label%d.mat'%count, {'label_origin': label_np})
     
         count = count +1
         
@@ -265,4 +268,4 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
 
        
 if __name__ == "__main__":
-    get_processed_dataset("test_dataset/Microwave/64QAM")
+    get_processed_dataset("test_dataset/QPSK")
