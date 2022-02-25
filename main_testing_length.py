@@ -16,9 +16,7 @@ if __name__ == "__main__":
 
     PHY_Net_gen = PHY_Reconstruction_AE()#PHY_Reconstruction_Generator()
     for i in range(1,11):
-        frame_length = 10*i
-        if i == 4:
-            continue    
+        frame_length = 10*i  
         print('frame_length = ', frame_length)
         frame_length_inx = str(frame_length)
         NN_Testing(PHY_Net_gen, 'frame_length/QPSK_'+frame_length_inx+ '.npz', 'PHY_dataset_NoInter_0.8.npz', frame_length)#PHY_Net_disc, 
