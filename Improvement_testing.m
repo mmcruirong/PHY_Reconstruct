@@ -11,7 +11,7 @@ Modulation = 'BPSK';
 %file names
 %Testing set names
 
-%Microwave %BabyMonitor %Whitenoise %OtherWiFi
+Inter = 'Zigbee/'; %Microwave %BabyMonitor %Whitenoise %OtherWiFi %Zigbee
 
 %Testing file names
 %/home/labuser/payload_reconstruction/test_results/BabyMonitor/QPSK_Origin
@@ -23,19 +23,19 @@ Modulation = 'BPSK';
 load(['/home/labuser/payload_reconstruction/FRR/',Modulation,'.mat']);
 
 
-for j = 1:144
-    %dataname_origin = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_Origin/data', num2str(j-1), '.mat'];
-    %snr_name = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_Origin/sinr', num2str(j-1), '.mat'];
-    %labelname_origin = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_Origin/label', num2str(j-1), '.mat'];
-    %dataname = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_After/data', num2str(j-1), '.mat'];
-    %labelname = ['/home/labuser/payload_reconstruction/test_results/Microwave/16QAM_After/label', num2str(j-1), '.mat'];
+for j = 1:100
+    dataname_origin = ['/home/labuser/payload_reconstruction/test_results/',Inter,Modulation,'_Origin/data', num2str(j-1), '.mat'];
+    snr_name = ['/home/labuser/payload_reconstruction/test_results/',Inter,Modulation,'_Origin/sinr', num2str(j-1), '.mat'];
+    labelname_origin = ['/home/labuser/payload_reconstruction/test_results/',Inter,Modulation,'_Origin/label', num2str(j-1), '.mat'];
+    dataname = ['/home/labuser/payload_reconstruction/test_results/',Inter,Modulation,'_After/data', num2str(j-1), '.mat'];
+    labelname = ['/home/labuser/payload_reconstruction/test_results/',Inter,Modulation,'_After/label', num2str(j-1), '.mat'];
     
     
-    dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_Origin_full/data', num2str(j-1), '.mat'];
-    snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_Origin_full/sinr', num2str(j-1), '.mat'];
-    labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_Origin_full/label', num2str(j-1), '.mat'];
-    dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_full/data', num2str(j-1), '.mat'];
-    labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_full/label', num2str(j-1), '.mat'];
+    %dataname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_Origin_full/data', num2str(j-1), '.mat'];
+    %snr_name = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_Origin_full/sinr', num2str(j-1), '.mat'];
+    %labelname_origin = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_Origin_full/label', num2str(j-1), '.mat'];
+    %dataname = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_full/data', num2str(j-1), '.mat'];
+    %labelname = ['/home/labuser/payload_reconstruction/MAT_OUT_',Modulation,'_full/label', num2str(j-1), '.mat'];
     
     load(dataname_origin)
     load(labelname_origin)

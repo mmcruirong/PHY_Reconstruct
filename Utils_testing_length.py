@@ -15,7 +15,8 @@ def data_loader_for_each_payload(data_path):
 def normalize_data(x):
         return (x - np.mean(x)) / np.std(x)
 
-def data_preprocessing_for_each_payload(data):
+def data_preprocessing_for_each_payload(data,frame_length):
+
     csi_out = []
     pilot_out = []   
     phy_payload = []
@@ -50,8 +51,8 @@ def data_preprocessing_for_each_payload(data):
             
 
         #csi_out = csi_out.reshape(1,48,2)
-        pilot_real = np.abs(Pilots[i_sample][0]).reshape(40, 4,1)
-        pilot_imag = np.angle(Pilots[i_sample][0]).reshape(40, 4,1)
+        pilot_real = np.abs(Pilots[i_sample][0]).reshape(frame_length, 4,1)
+        pilot_imag = np.angle(Pilots[i_sample][0]).reshape(frame_length, 4,1)
         pilot_out.append(np.concatenate((pilot_imag,pilot_real),axis = 2))       
         #pilot_out.append([pilot_amp,pilot_angle])  
 
@@ -59,20 +60,20 @@ def data_preprocessing_for_each_payload(data):
         #raw_payload_imag = np.imag(Raw_payload[i_sample][0]).reshape(40, 48,1, order='F')
         #raw_payload.append((np.concatenate((raw_payload_real,raw_payload_imag),axis = 2)))    
        
-        phy_payload_real = np.real(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')
-        phy_payload_imag = np.imag(Phypayload[i_sample][0]).reshape(40, 48,1, order='F')   
+        phy_payload_real = np.real(Phypayload[i_sample][0]).reshape(frame_length, 48,1, order='F')
+        phy_payload_imag = np.imag(Phypayload[i_sample][0]).reshape(frame_length, 48,1, order='F')   
         phy_payload.append((np.concatenate((phy_payload_real,phy_payload_imag),axis = 2)))
 
 
         #groundtruth.append(np.transpose(mapping[np.intc(Groundtruth[i_sample][0])]).reshape(40, 48, 1))
         #groundtruth_real = np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
         #groundtruth_imag = np.imag(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F') # use this line other than BPSK
-        groundtruth_real = np.divide(np.real(Groundtruth[i_sample][0]).reshape(40, 48,1, order='F'),0.707)  #this is only for BPSK
-        groundtruth_imag = np.zeros((40, 48,1)) # This is only for BPSK
+        groundtruth_real = np.divide(np.real(Groundtruth[i_sample][0]).reshape(frame_length, 48,1, order='F'),0.707)  #this is only for BPSK
+        groundtruth_imag = np.zeros((frame_length, 48,1)) # This is only for BPSK
         groundtruth.append((np.concatenate((groundtruth_real,groundtruth_imag),axis = 2)))
 
-        label.append(Label[i_sample][0].reshape(40,48,1, order='F'))
-        label1.append(Label1[i_sample][0].reshape(40,48,1, order='F'))
+        label.append(Label[i_sample][0].reshape(frame_length,48,1, order='F'))
+        label1.append(Label1[i_sample][0].reshape(frame_length,48,1, order='F'))
 
         ber.append(BER[i_sample][0].reshape(1,1))
         snr.append(SNR[i_sample][0].reshape(1,1))
@@ -94,14 +95,15 @@ def data_preprocessing_for_each_payload(data):
 
     return phy_payload, groundtruth, label, label1,csi_out,pilot_out,ber,snr
 
-def get_processed_dataset(data_path, split=4/5):
+def get_processed_dataset(data_path, frame_length):
+    
     file_list = os.listdir(data_path)
     CSI = np.empty((0, 1, 48, 2))
-    PILOT = np.empty((0, 40, 4, 2))
-    PHY_PAYLOAD = np.empty((0, 40, 48, 2))
-    GROUNDTRUTH = np.empty((0, 40, 48, 2))
-    LABEL = np.empty((0, 40, 48, 1))
-    LABEL1 = np.empty((0, 40, 48, 1))
+    PILOT = np.empty((0, frame_length, 4, 2))
+    PHY_PAYLOAD = np.empty((0, frame_length, 48, 2))
+    GROUNDTRUTH = np.empty((0, frame_length, 48, 2))
+    LABEL = np.empty((0, frame_length, 48, 1))
+    LABEL1 = np.empty((0, frame_length, 48, 1))
     BER = np.empty((0, 1,1))
     SNR = np.empty((0, 1,1))
     #GT = np.empty((0, 40, 48, 1))
@@ -109,7 +111,7 @@ def get_processed_dataset(data_path, split=4/5):
     # print(file_list)
     for file in file_list:
        data_chunk = data_loader_for_each_payload(data_path + '/' + file)
-       phy_payload, groudtruth, Tx_label, Rx_label,csi_out,pilot_out,ber,snr = data_preprocessing_for_each_payload(data_chunk)
+       phy_payload, groudtruth, Tx_label, Rx_label,csi_out,pilot_out,ber,snr = data_preprocessing_for_each_payload(data_chunk,frame_length)
        CSI = np.concatenate([CSI, csi_out], axis=0)
        PILOT = np.concatenate([PILOT, pilot_out], axis=0)
        PHY_PAYLOAD = np.concatenate([PHY_PAYLOAD, phy_payload], axis=0)
@@ -127,7 +129,7 @@ def get_processed_dataset(data_path, split=4/5):
     print('BER =', np.mean(BER))
     print('SER =', np.mean(SNR))
 
-    np.savez_compressed("PHY_dataset_TEST", 
+    np.savez_compressed("frame_length/BPSK_40", 
                         csi_test=CSI,
                         pilot_test=PILOT,
                         phy_payload_test=PHY_PAYLOAD,
@@ -165,10 +167,10 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         #groundtruth_test1 = data['groundtruth_test'].astype(np.float32)
         #label_test1 = data['label_test'].astype(np.float32)
         #label1_test1 = data['label1_test'].astype(np.float32)
-    csi_train1 = csi_train1[40000:80000,:,:,:]
-    pilot_train1 = pilot_train1[40000:80000,:,:,:]
-    csi_test1 = csi_train1[0:10000,:,:,:]    
-    pilot_test1 = pilot_train1[0:10000,:,:,:]  
+    csi_train1 = csi_train1[10000:80000,:,:,:]
+    pilot_train1 = pilot_train1[10000:80000,:,:,:]
+    csi_test1 = csi_train1[0:1000,:,:,:]    
+    pilot_test1 = pilot_train1[0:1000,:,:,:]  
     #csi_test1 = csi_test1[1000:2000,:,:,:]        
     #csi_train1 = csi_train1[2000:3000,:,:,:]  
     #pilot_test1 = pilot_test1[1000:2000,:,:,:] 
@@ -203,24 +205,22 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 
     return test_data
 
-def NN_Testing(generator,  test_path, test_path1, logdir):
+def NN_Testing(generator,  test_path, test_path1, frame_length):
     testing_model = generator
     Mod_order = 4
     batch_size = 100
-    count = 0
-    frame_length = 10
-    frame_length_idx = '10'
+    count = 0    
+    frame_length_idx = str(frame_length)
+    modulation = 'QPSK'
 
-    modulation = '16QAM'
-    Interferece = 'Microwave/'  #Whitenoise #OtherWiFi
     if Mod_order ==2:    
-        testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x7477.tf'))
+        testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x2279.tf'))
     elif Mod_order ==4:   
-        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x4966.tf'))
+        testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x6376.tf'))
     elif Mod_order ==16:
-        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x3756.tf'))
+        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x8356.tf'))
     elif Mod_order ==64:
-        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x3756.tf'))
+        testing_model.load_weights(os.path.join('saved_models/64QAM','PHY_Net_x9269.tf'))
     print('weights loaded')    
     test_data = load_processed_dataset(test_path, test_path1,5000, batch_size, batch_size)
     #start_time = time.time()
@@ -233,11 +233,17 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
         Label_input = tf.squeeze(tf.reshape(label,[frame_length*batch_size,48,1,1]),axis = 2)
         Label1_input = tf.squeeze(tf.reshape(label1,[frame_length*batch_size,48,1,1]),axis = 2)
         
-        Csi_duplicate1 = tf.repeat(csi1,frame_length,axis=0)       
-        Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[frame_length*batch_size,48,1,2]),axis = 2)
-        Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[frame_length*batch_size,4,1,2]),axis = 2)
-        #print('SNR shape = ',snr.shape)
-        generated_out = testing_model([Csi_input, Pilot_input,Csi_input1, Pilot_input1,PHY_input,Groundtruth_input])
+        Csi_duplicate1 = tf.repeat(csi1,40,axis=0)       
+        Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
+        Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
+        #print('Pilot_input shape = ',Pilot_input1.shape)
+
+        Csi_input1_slice = tf.repeat(Csi_input1[0:1000,:,:],tf.cast(frame_length/10, tf.uint8),axis = 0)
+        Pilot_input1_slice = tf.repeat(Pilot_input1[0:1000,:,:],tf.cast(frame_length/10, tf.uint8),axis = 0)
+        
+        #print('Pilot_input shape = ',Pilot_input1_slice.shape)
+
+        generated_out = testing_model([Csi_input, Pilot_input,Csi_input1_slice, Pilot_input1_slice,PHY_input,Groundtruth_input])
         #tf.print('Gen_out = ',generated_out[1,1,:])
         #generated_out = generator([csi, pilot,csi1, pilot1,phy_payload,groundtruth])
         classification_result = tf.math.argmax(generated_out,axis = 2)
@@ -253,14 +259,14 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
 
         
         
-        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + '_Origin/data_' + '%d.mat'%count, {'data': classifcation_np})
-        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + '_Origin/label%d.mat'%count, {'label': label_np})
-        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + '_Origin/sinr%d.mat'%count, {'sinr': sinr})
+        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + 'Origin/data%d.mat'%count, {'data': classifcation_np})
+        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + 'Origin/label%d.mat'%count, {'label': label_np})
+        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + 'Origin/sinr%d.mat'%count, {'sinr': sinr})
         
        
         #print("Save mat")
-        scipy.io.savemat('test_results/'+Interferece+'/' + frame_length_idx+'/' + '_After/data%d.mat'%count, {'data_origin': label1_np})
-        scipy.io.savemat('test_results/'+Interferece+'/' + frame_length_idx+'/' + '_After/label%d.mat'%count, {'label_origin': label_np})
+        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + 'After/data%d.mat'%count, {'data_origin': label1_np})
+        scipy.io.savemat('test_results/'+ modulation+'/' + frame_length_idx+'/' + 'After/label%d.mat'%count, {'label_origin': label_np})
     
         count = count +1
         
@@ -268,4 +274,4 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
 
        
 if __name__ == "__main__":
-    get_processed_dataset("test_dataset/QPSK")
+    get_processed_dataset("test_dataset/Length/BPSK/40",40)

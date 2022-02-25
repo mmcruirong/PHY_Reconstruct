@@ -349,6 +349,10 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             Csi_duplicate1 = tf.repeat(csi1,40,axis=0)       
             Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
             Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
+            
+            Csi_input1_slice = tf.repeat(Csi_input1[0:1000,:,:],tf.cast(4, tf.uint8),axis = 0)
+            Pilot_input1_slice = tf.repeat(Pilot_input1[0:1000,:,:],tf.cast(4, tf.uint8),axis = 0)
+            
             #print('CSI SHAPE = ',Csi_input.shape)
             #print('Pilot SHAPE = ',Pilot_input.shape)
             #print('PHY SHAPE = ',PHY_input.shape)
@@ -356,7 +360,7 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             #print('label SHAPE = ',Label_input.shape)
 
             
-            step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input, Label1_input,Csi_input1, Pilot_input1, training=True)
+            step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input, Label1_input,Csi_input1_slice, Pilot_input1_slice, training=True)
             batch_accuracy = accuracy.result() + batch_accuracy
             #print('batch_accuracy = ', batch_accuracy)
             if training_step % 100 == 0:
@@ -390,8 +394,12 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             Csi_duplicate1 = tf.repeat(csi1,40,axis=0)       
             Csi_input1 = tf.squeeze(tf.reshape(Csi_duplicate1,[40*batch_size,48,1,2]),axis = 2)
             Pilot_input1 = tf.squeeze(tf.reshape(pilot1,[40*batch_size,4,1,2]),axis = 2)
+
+            Csi_input1_slice = tf.repeat(Csi_input1[0:1000,:,:],tf.cast(4, tf.uint8),axis = 0)
+            Pilot_input1_slice = tf.repeat(Pilot_input1[0:1000,:,:],tf.cast(4, tf.uint8),axis = 0)
+
             testing_step += 1
-            generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input,Csi_input1, Pilot_input1, training=False)
+            generated_out = step(Csi_input, Pilot_input,PHY_input,Groundtruth_input, Label_input,Label1_input,Csi_input1_slice, Pilot_input1_slice, training=False)
             #tf.print('Gen_out = ',generated_out[1,1,:])
             
             classification_result = tf.math.argmax(generated_out,axis = 2)
@@ -442,17 +450,17 @@ def NN_training(generator, discriminator, data_path, data_path1, logdir):
             
             if epoch == 34:              
                 #print("Save mat")
-                scipy.io.savemat('MAT_OUT_QPSK_full/data%d.mat'%count, {'data': classifcation_np})
-                scipy.io.savemat('MAT_OUT_QPSK_full/label%d.mat'%count, {'label': label_np})
+                scipy.io.savemat('MAT_OUT_QPSK/data%d.mat'%count, {'data': classifcation_np})
+                scipy.io.savemat('MAT_OUT_QPSK/label%d.mat'%count, {'label': label_np})
                 #print('BER = ', bit_error)
                 
             
             if epoch == 0:
             
                 #print("Save mat")
-                scipy.io.savemat('MAT_OUT_QPSK_Origin_full/data%d.mat'%count, {'data_origin': label1_np})
-                scipy.io.savemat('MAT_OUT_QPSK_Origin_full/label%d.mat'%count, {'label_origin': label_np})
-                scipy.io.savemat('MAT_OUT_QPSK_Origin_full/sinr%d.mat'%count, {'sinr': sinr})
+                scipy.io.savemat('MAT_OUT_QPSK_Origin/data%d.mat'%count, {'data_origin': label1_np})
+                scipy.io.savemat('MAT_OUT_QPSK_Origin/label%d.mat'%count, {'label_origin': label_np})
+                scipy.io.savemat('MAT_OUT_QPSK_Origin/sinr%d.mat'%count, {'sinr': sinr})
 
             count = count +1
 

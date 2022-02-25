@@ -125,9 +125,9 @@ def get_processed_dataset(data_path, split=4/5):
 
 
     print('BER =', np.mean(BER))
-    print('SER =', np.mean(SNR))
+    print('SNR =', np.mean(SNR))
 
-    np.savez_compressed("PHY_dataset_MC64",  #MC = Microwave ZB = Zigbee
+    np.savez_compressed("PHY_dataset_BB64",  #MC = Microwave ZB = Zigbee BB = babymonitor # WN = whitenoise #OW = OtherWiFi
                         csi_test=CSI,
                         pilot_test=PILOT,
                         phy_payload_test=PHY_PAYLOAD,
@@ -165,8 +165,8 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
         #groundtruth_test1 = data['groundtruth_test'].astype(np.float32)
         #label_test1 = data['label_test'].astype(np.float32)
         #label1_test1 = data['label1_test'].astype(np.float32)
-    csi_train1 = csi_train1[40000:80000,:,:,:]
-    pilot_train1 = pilot_train1[40000:80000,:,:,:]
+    csi_train1 = csi_train1[10000:80000,:,:,:]
+    pilot_train1 = pilot_train1[10000:80000,:,:,:]
     csi_test1 = csi_train1[0:10000,:,:,:]    
     pilot_test1 = pilot_train1[0:10000,:,:,:]  
     #csi_test1 = csi_test1[1000:2000,:,:,:]        
@@ -205,19 +205,19 @@ def load_processed_dataset(path,path1, shuffle_buffer_size, train_batch_size, te
 
 def NN_Testing(generator,  test_path, test_path1, logdir):
     testing_model = generator
-    Mod_order = 4
+    Mod_order = 64
     batch_size = 100
     count = 0
-    modulation = '16QAM'
-    Interferece = 'Microwave/'  #Whitenoise #OtherWiFi #Zigbee #Microwave
+    modulation = '64QAM'
+    Interferece = 'Whitenoise/'  #Whitenoise #OtherWiFi #Zigbee #BabyMonitor  #Microwave
     if Mod_order ==2:    
         testing_model.load_weights(os.path.join('saved_models/BPSK', 'PHY_Net_x2279.tf'))
     elif Mod_order ==4:   
         testing_model.load_weights(os.path.join('saved_models/QPSK', 'PHY_Net_x9106.tf'))
     elif Mod_order ==16:
-        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x8756.tf'))
+        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x8356.tf'))
     elif Mod_order ==64:
-        testing_model.load_weights(os.path.join('saved_models/16QAM','PHY_Net_x9269.tf'))
+        testing_model.load_weights(os.path.join('saved_models/64QAM','PHY_Net_x9269.tf'))
     print('weights loaded')    
     test_data = load_processed_dataset(test_path, test_path1,5000, batch_size, batch_size)
     #start_time = time.time()
@@ -265,4 +265,4 @@ def NN_Testing(generator,  test_path, test_path1, logdir):
 
        
 if __name__ == "__main__":
-    get_processed_dataset("test_dataset/Microwave/64QAM")
+    get_processed_dataset("test_dataset/babymonitor/64QAM")
